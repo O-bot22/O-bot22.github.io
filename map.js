@@ -1,6 +1,3 @@
----
-
----
 // create points
 var littleton = L.marker([36.51, -6.19]).bindPopup('This is Littleton, CO.'),
     denver    = L.marker([36.54, -6.19]).bindPopup('This is Denver, CO.'),
@@ -25,7 +22,7 @@ var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
 // create map instance centered around Puerto Real with the map layers
 var map = L.map('map', {
     center: [36.531517590929056, -6.190161615515397],
-    zoom: 8, // 14
+    zoom: 14,
     layers: [osm]
 });
 
@@ -44,17 +41,8 @@ var overlayMaps = {
 // add the legend object to the map instance
 var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
 
-
-// fetch('/Renta neta media por persona.geojson')
-//   .then(response => response.json())
-//   .then(data => {
-//     L.geoJSON(data).addTo(map);
-//     alert("map data loaded!");
-//   });
   
-fetch('http://127.0.0.1:4000/assets/data/puerto_real_zones.geojson')
-// console.log("{{ site.url }}/assets/data/sample_map.geojson");
-// fetch('{{ site.url }}/assets/data/sample_map.geojson')
+fetch('https://raw.githubusercontent.com/O-bot22/O-bot22.github.io/refs/heads/from_scratch/assets/data/puerto_real_zones.geojson')
     .then(response => 
         response.json()
     )
