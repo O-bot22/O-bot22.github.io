@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Retiro Park, Madrid",
+        "description": "A large historical park in the center of Madrid.",
+        "fillColor": "#228B22"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-3.688, 40.415],
+          [-3.675, 40.415],
+          [-3.675, 40.408],
+          [-3.688, 40.408],
+          [-3.688, 40.415]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Plaza de España, Seville",
+        "description": "A landmark square in the Maria Luisa Park.",
+        "fillColor": "#FF4500"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-5.987, 37.377],
+          [-5.986, 37.378],
+          [-5.985, 37.377],
+          [-5.986, 37.376],
+          [-5.987, 37.377]
+        ]]
+      }
+    }
+  ]
+}

@@ -1,7 +1,10 @@
 source "https://rubygems.org"
 
 gem "jekyll"
-gem "github-pages", group: :jekyll_plugins
+# gem "github-pages", group: :jekyll_plugins
+gem "jekyll-remote-theme"
+gem "minimal-mistakes-jekyll"
+gem 'wdm', '>= 0.1.0'
 
 group :jekyll_plugins do
   gem "jekyll-feed"
