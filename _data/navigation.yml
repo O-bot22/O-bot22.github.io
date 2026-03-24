@@ -1,0 +1,16 @@
+main:
+  - title: "Map Display"
+    url: /map/
+  - title: "Energy Usage Tips"
+    url: /year-archive/
+  - title: "Categories"
+    url: /categories/
+  - title: "Tags"
+    url: /tags/
+  - title: "Pages"
+    url: /page-archive/
+  - title: "About"
+    url: /collection-archive/
+  - title: "External Link"
+    url: https://google.com
+    target: _blank
