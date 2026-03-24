@@ -17,14 +17,14 @@ minimal_mistakes_skin    :  "default" #"default" # "air", "aqua", "contrast", "d
 # Site Settings
 locale                   : "en-US"
 rtl                      : # true, false (default) # turns direction of the page into right to left for RTL languages
-title                    : "Site Title"
+title                    : "Energy Poverty"
 title_separator          : "-"
-subtitle                 : # site tagline that appears below site title in masthead
-name                     : "Your Name"
-description              : "An amazing website."
+subtitle                 : "WPI IQP project sponsored by UCA"
+name                     : "Energy Poverty Team"
+description              : "An IQP from WPI investigating energy poverty surveys, interviews, and an interactive map."
 url                      : "/" # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
-baseurl                  : # the subpath of your site, e.g. "/blog"
-repository               : # GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
+baseurl                  : "" # the subpath of your site, e.g. "/blog"
+repository               : "O-bot22/O-bot22.github.io"
 teaser                   : # path of fallback teaser image, e.g. "/assets/images/500x300.png"
 logo                     : # path of logo image to display in the masthead, e.g. "/assets/images/88x88.png"
 masthead_title           : # overrides the website title displayed in the masthead, use " " for no title
@@ -114,10 +114,10 @@ analytics:
 
 # Site Author
 author:
-  name             : "Your Name"
+  name             : "Energy Poverty Team"
   avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
-  bio              : "I am an **amazing** person."
-  location         : "Somewhere"
+  bio              : "Interdisciplinary team of WPI IQP students investigating energy poverty (sponsored by UCA)."
+  location         : "Worcester, MA / Cádiz, Spain"
   email            :
   # fediverse      : "@you@instance.social"  # used for fediverse:creator meta tag
   links:
