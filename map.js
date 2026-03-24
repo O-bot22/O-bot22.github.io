@@ -76,7 +76,7 @@ async function fetchMyData() {
       console.log("ID:", doc.id, "Data:", doc.data());
     });
 
-    // now, we can pull the geojson map, and add all the properties from firebase to each of the zones?
+    // now, we can pull the geojson map, and add all the properties from firebase to each of the zones
 
     fetch('https://raw.githubusercontent.com/O-bot22/O-bot22.github.io/refs/heads/from_scratch/assets/data/puerto_real_zones.geojson')
     .then(response => 
@@ -89,7 +89,7 @@ async function fetchMyData() {
         const incomeLookup = {};
         snapshot.forEach(doc => {
             // console.log(doc.data());
-            incomeLookup[doc.id] = doc.data().mediana_renta_unidad_consumo;
+            incomeLookup[doc.id] = doc.data();
         });
         console.log(incomeLookup);
 
@@ -97,7 +97,7 @@ async function fetchMyData() {
         L.geoJson(geojsonData, {
             style: function(feature) {
                 // Pull the income from our lookup table using the GeoJSON ID
-                const income = incomeLookup[feature.properties.CUSEC];
+                const income = incomeLookup[feature.properties.CUSEC].mediana_renta_unidad_consumo;
                 
                 return {
                     fillColor: getColor(income), // Use your existing color function
@@ -108,7 +108,7 @@ async function fetchMyData() {
             },
             onEachFeature: function(feature, layer) {
                 const CUSEC = feature.properties.CUSEC;
-                layer.bindTooltip(`CUSEC number: ${CUSEC || 'No Data'} and $${incomeLookup[CUSEC]}`);
+                layer.bindTooltip(`CUSEC number: ${CUSEC || 'No Data'} and $${incomeLookup[CUSEC].mediana_renta_unidad_consumo}`);
             }
         }).addTo(map);
     });
