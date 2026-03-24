@@ -33,13 +33,50 @@ var baseMaps = {
     "<span style='color: red'>OpenStreetMap.HOT</span>": osmHOT
 };
 
-var overlayMaps = {
-    "Cities": cities
-};
+// Set up firebase
+
+import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
+
+// Check if you are running locally
+console.log(location.hostname);
+if (location.hostname === "127.0.0.1") {
+    console.log("connecting to emulator...")
+    // 8080 is the default Firestore emulator port
+    connectFirestoreEmulator(db, 'localhost', 8888);
+}
+
+console.log("firebase imported!");
 
 
-// add the legend object to the map instance
-var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+async function fetchMyData() {
+  try {
+    console.log("fetching data...")
+    const colRef = collection(db, "Zones");
+    console.log(colRef);
+
+    // const q = query(colRef, where("status", "==", "active"));
+    // const snapshot = await getDocs(q);
+
+    const snapshot = await getDocs(colRef);
+
+    console.log("recieved data?")
+    
+    if (snapshot.empty) {
+      console.log("No documents found.");
+      return;
+    }
+
+    snapshot.forEach(doc => {
+      console.log("ID:", doc.id, "Data:", doc.data());
+    });
+  } catch (error) {
+    console.error("Error pulling Firestore data:", error);
+  }
+}
+
+// Run it!
+fetchMyData();
+
 
   
 fetch('https://raw.githubusercontent.com/O-bot22/O-bot22.github.io/refs/heads/from_scratch/assets/data/puerto_real_zones.geojson')
@@ -48,5 +85,37 @@ fetch('https://raw.githubusercontent.com/O-bot22/O-bot22.github.io/refs/heads/fr
     )
     .then(data => {
         console.log(data);
-        L.geoJSON(data).addTo(map);
+        var income_layer = L.geoJSON(data);
+        income_layer.addTo(map);
+
+        var overlayMaps = {
+            "Cities": cities,
+            "Income?": income_layer
+        };
+
+        // add the legend object to the map instance
+        var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
     });
+
+// Import the functions you need from the SDKs you need
+// import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+// import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+// import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-lite.js";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// const firebaseConfig = {
+//     apiKey: "AIzaSyAdZjIs5nGclyE2imP6i3IDMLSTZa5Ll6s",
+//     authDomain: "puerto-real-energy-poverty.firebaseapp.com",
+//     projectId: "puerto-real-energy-poverty",
+//     storageBucket: "puerto-real-energy-poverty.firebasestorage.app",
+//     messagingSenderId: "771763485796",
+//     appId: "1:771763485796:web:17a4dc2efc6231240ef371",
+//     measurementId: "G-8K571D71ED"
+// };
+
+// const app = initializeApp(firebaseConfig);
+

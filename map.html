@@ -17,25 +17,4 @@ classes: wide
 <div id="map"></div>
 
 <!-- 3. Map Initialization Script -->
-<script src="/map.js"></script>
-<!-- <script>
-  // Initialize the map and set its view to chosen geographical coordinates and a zoom level
-  var map = L.map('map').setView([51.505, -0.09], 13);
-
-  // Add a tile layer (OpenStreetMap)
-  L.tileLayer('https://tile.openstreetmap.org{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="http://www.openstreetmap.org">OpenStreetMap</a>'
-  }).addTo(map);
-
-  // Optional: Add a marker
-  var marker = L.marker([51.5, -0.09]).addTo(map);
-  marker.bindPopup("<b>Hello!</b><br>I am a Leaflet map in Minimal Mistakes.").openPopup();
-
-  fetch('/assets/data/Renta neta media por persona.geojson')
-  .then(response => response.json())
-  .then(data => {
-    L.geoJSON(data).addTo(map);
-  });
-
-</script> -->
+<script type="module" crossorigin src="/map.js"></script>
