@@ -48,6 +48,12 @@ if (location.hostname === "127.0.0.1") {
 console.log("firebase imported!");
 
 
+function getColor(d) {
+    return d > 20000 ? '#800026' :
+           d > 10000 ? '#BD0026' :
+                       '#FFEDA0';
+}
+
 async function fetchMyData() {
   try {
     console.log("fetching data...")
@@ -69,6 +75,44 @@ async function fetchMyData() {
     snapshot.forEach(doc => {
       console.log("ID:", doc.id, "Data:", doc.data());
     });
+
+    // now, we can pull the geojson map, and add all the properties from firebase to each of the zones?
+
+    fetch('https://raw.githubusercontent.com/O-bot22/O-bot22.github.io/refs/heads/from_scratch/assets/data/puerto_real_zones.geojson')
+    .then(response => 
+        response.json()
+    )
+    .then(geojsonData => {
+        console.log(geojsonData);
+    
+        // Step 1: Create the lookup object
+        const incomeLookup = {};
+        snapshot.forEach(doc => {
+            // console.log(doc.data());
+            incomeLookup[doc.id] = doc.data().mediana_renta_unidad_consumo;
+        });
+        console.log(incomeLookup);
+
+        // Step 2: Use the lookup in your Leaflet layer
+        L.geoJson(geojsonData, {
+            style: function(feature) {
+                // Pull the income from our lookup table using the GeoJSON ID
+                const income = incomeLookup[feature.properties.CUSEC];
+                
+                return {
+                    fillColor: getColor(income), // Use your existing color function
+                    weight: 1,
+                    fillOpacity: 0.7,
+                    color: 'white'
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                const CUSEC = feature.properties.CUSEC;
+                layer.bindTooltip(`CUSEC number: ${CUSEC || 'No Data'} and $${incomeLookup[CUSEC]}`);
+            }
+        }).addTo(map);
+    });
+
   } catch (error) {
     console.error("Error pulling Firestore data:", error);
   }
@@ -76,46 +120,3 @@ async function fetchMyData() {
 
 // Run it!
 fetchMyData();
-
-
-  
-fetch('https://raw.githubusercontent.com/O-bot22/O-bot22.github.io/refs/heads/from_scratch/assets/data/puerto_real_zones.geojson')
-    .then(response => 
-        response.json()
-    )
-    .then(data => {
-        console.log(data);
-        var income_layer = L.geoJSON(data);
-        income_layer.addTo(map);
-
-        var overlayMaps = {
-            "Cities": cities,
-            "Income?": income_layer
-        };
-
-        // add the legend object to the map instance
-        var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
-    });
-
-// Import the functions you need from the SDKs you need
-// import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-// import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
-// import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-lite.js";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-// const firebaseConfig = {
-//     apiKey: "AIzaSyAdZjIs5nGclyE2imP6i3IDMLSTZa5Ll6s",
-//     authDomain: "puerto-real-energy-poverty.firebaseapp.com",
-//     projectId: "puerto-real-energy-poverty",
-//     storageBucket: "puerto-real-energy-poverty.firebasestorage.app",
-//     messagingSenderId: "771763485796",
-//     appId: "1:771763485796:web:17a4dc2efc6231240ef371",
-//     measurementId: "G-8K571D71ED"
-// };
-
-// const app = initializeApp(firebaseConfig);
-
