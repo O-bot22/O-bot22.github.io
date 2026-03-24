@@ -1,1 +1,19 @@
-/_site
+# Jekyll generated site
+_site/
+
+# Bundle
+.bundle/
+vendor/bundle/
+
+# Dependencies files (keep in repo only if needed)
+Gemfile
+Gemfile.lock
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+env/**
+
