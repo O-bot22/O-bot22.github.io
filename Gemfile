@@ -5,6 +5,7 @@ gem "bigdecimal"
 gem "jekyll"
 # gem "github-pages", group: :jekyll_plugins
 gem "jekyll-remote-theme"
+gem "jekyll-include-cache"
 gem "minimal-mistakes-jekyll"
 gem 'wdm', '>= 0.1.0'
 
