@@ -56,25 +56,19 @@ function getColor(d) {
 
 async function fetchMyData() {
   try {
-    console.log("fetching data...")
+    console.log("connecting to database...");
     const colRef = collection(db, "Zones");
-    console.log(colRef);
-
-    // const q = query(colRef, where("status", "==", "active"));
-    // const snapshot = await getDocs(q);
+    console.log("database connected !");
 
     const snapshot = await getDocs(colRef);
 
-    console.log("recieved data?")
+    console.log("data recieved!");
     
     if (snapshot.empty) {
       console.log("No documents found.");
       return;
     }
 
-    snapshot.forEach(doc => {
-      console.log("ID:", doc.id, "Data:", doc.data());
-    });
 
     // now, we can pull the geojson map, and add all the properties from firebase to each of the zones
 
@@ -83,21 +77,18 @@ async function fetchMyData() {
         response.json()
     )
     .then(geojsonData => {
-        console.log(geojsonData);
-    
         // Step 1: Create the lookup object
         const incomeLookup = {};
         snapshot.forEach(doc => {
-            // console.log(doc.data());
             incomeLookup[doc.id] = doc.data();
         });
-        console.log(incomeLookup);
 
         // Step 2: Use the lookup in your Leaflet layer
         L.geoJson(geojsonData, {
             style: function(feature) {
                 // Pull the income from our lookup table using the GeoJSON ID
-                const income = incomeLookup[feature.properties.CUSEC].mediana_renta_unidad_consumo;
+                const income = incomeLookup[feature.properties.CUSEC]["datasets"]["tabla_30944"]["Media de la renta por unidad de consumo"];
+                // console.log(income);
                 
                 return {
                     fillColor: getColor(income), // Use your existing color function
@@ -108,7 +99,7 @@ async function fetchMyData() {
             },
             onEachFeature: function(feature, layer) {
                 const CUSEC = feature.properties.CUSEC;
-                layer.bindTooltip(`CUSEC number: ${CUSEC || 'No Data'} and $${incomeLookup[CUSEC].mediana_renta_unidad_consumo}`);
+                layer.bindTooltip(`CUSEC number: ${CUSEC || 'No Data'} and $${incomeLookup[feature.properties.CUSEC]["datasets"]["tabla_30944"]["Media de la renta por unidad de consumo"]}`);
             }
         }).addTo(map);
     });
