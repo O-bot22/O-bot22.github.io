@@ -32,3 +32,21 @@ input[type=radio]:checked {
 .leaflet-control-layers-overlays {
   font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace; font-size: 1.25em;
 }
+
+/* For the Statistics Table */
+table{
+  display: flex;
+}
+
+#main {
+  margin-inline: 3em;
+  max-width: 1560px;
+}
+
+.page__footer{
+  margin-top: 1em;
+}
+
+.sidebar {
+  font-size: 16px;
+}

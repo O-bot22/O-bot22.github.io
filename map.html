@@ -3,18 +3,18 @@ layout: single
 title: "Interactive Leaflet Map"
 permalink: /map/
 classes: wide
+sidebar: true
 ---
 
-<!-- 1. Leaflet CSS and JS -->
+<!-- Leaflet CSS and JS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- 2. Map Container (Requires fixed height) -->
+<!-- Map Container (Requires fixed height) -->
 <style>
   #map { height: 500px; width: 100%; }
 </style>
-
 <div id="map"></div>
 
-<!-- 3. Map Initialization Script -->
+<!-- Map Initialization Script -->
 <script type="module" crossorigin src="/map.js"></script>

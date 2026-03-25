@@ -54,6 +54,11 @@ function getColor(d) {
                        '#FFEDA0';
 }
 
+// Global Data Selection Variables
+let dataset_table = "";
+let dataset_name = "";
+
+
 async function fetchMyData() {
   try {
     console.log("connecting to database...");
@@ -69,6 +74,28 @@ async function fetchMyData() {
       return;
     }
 
+    // generate a dropdown to put all of the statistics
+    const dropdown = document.getElementById("statistics");
+    
+    const table_names = Object.keys(snapshot.docs[0].data()["datasets"]);
+    
+    table_names.forEach((pair) => {
+        var dropdown_element = document.createElement("option");
+        dropdown_element.innerHTML = pair;
+        dropdown_element.value = pair;
+        dropdown.appendChild(dropdown_element);
+    });
+
+    const dataset_dropdown = document.getElementById("dataset");
+
+    const dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][table_names[0]]);
+    
+    dataset_names.forEach(name => {
+        var dropdown_element = document.createElement("option");
+        dropdown_element.innerHTML = name;
+        dropdown_element.value = name;
+        dataset_dropdown.appendChild(dropdown_element);
+    });
 
     // now, we can pull the geojson map, and add all the properties from firebase to each of the zones
 
@@ -99,7 +126,18 @@ async function fetchMyData() {
             },
             onEachFeature: function(feature, layer) {
                 const CUSEC = feature.properties.CUSEC;
-                layer.bindTooltip(`CUSEC number: ${CUSEC || 'No Data'} and $${incomeLookup[feature.properties.CUSEC]["datasets"]["tabla_30944"]["Media de la renta por unidad de consumo"]}`);
+                
+                // register the basic, built in leaflet popup
+                // layer.bindTooltip(`CUSEC number: ${CUSEC || 'No Data'} and $${incomeLookup[feature.properties.CUSEC]["datasets"]["tabla_30944"]["Media de la renta por unidad de consumo"]}`);
+
+                layer.on('click', function(e) {
+                    // Access properties of the clicked polygon
+                    // alert("You clicked on " + CUSEC);
+                    
+                    // update the Statistics Sidebar
+                    let number = document.getElementById("stat_number");
+                    number.innerHTML = CUSEC;
+                });
             }
         }).addTo(map);
     });
@@ -111,3 +149,8 @@ async function fetchMyData() {
 
 // Run it!
 fetchMyData();
+
+1
+// connect to Statistics Sidebar
+let number = document.getElementById("stat_number");
+number.innerHTML = "ff";
