@@ -15,7 +15,9 @@
     {% if page.sidebar.nav %}
       {% include nav_list locale=locale nav=page.sidebar.nav %}
     {% endif %}
+    {% if page.statistics_block %}
+      {% include sidebar-custom.html %}
+    {% endif %}
   {% endif %}
-  {% include sidebar-custom.html %}
   </div>
 {% endif %}
