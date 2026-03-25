@@ -1,11 +1,3 @@
-// create points
-var littleton = L.marker([36.51, -6.19]).bindPopup('This is Littleton, CO.'),
-    denver    = L.marker([36.54, -6.19]).bindPopup('This is Denver, CO.'),
-    aurora    = L.marker([36.53, -6.19]).bindPopup('This is Aurora, CO.'),
-    golden    = L.marker([36.57, -6.19]).bindPopup('This is Golden, CO.');
-var cities = L.layerGroup([littleton, denver, aurora, golden]);
-
-
 // create base map layer
 var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -23,18 +15,12 @@ var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
 var map = L.map('map', {
     center: [36.531517590929056, -6.190161615515397],
     zoom: 14,
-    layers: [osm]
+    layers: [osmHOT]
 });
 
 
-// these labels are what go in the legend
-var baseMaps = {
-    "OpenStreetMap": osm,
-    "<span style='color: red'>OpenStreetMap.HOT</span>": osmHOT
-};
 
 // Set up firebase
-
 import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
 
 // Check if you are running locally
@@ -56,7 +42,88 @@ function getColor(d) {
 
 // Global Data Selection Variables
 let dataset_table = "";
-let dataset_name = "";
+let selected_CUSEC = null;
+let snapshot;
+
+// function generate_dataset_dropdown(){
+//     if(! snapshot){
+//         console.log("Firebase not pulled yet!");
+//         return;
+//     }
+
+//     const dataset_dropdown = document.getElementById("dataset");
+    
+//     // const table_names = Object.keys(snapshot.docs[0].data()["datasets"]);
+//     const dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][dataset_table]);
+
+//     dataset_dropdown.innerHTML = "";
+//     dataset_names.forEach(name => {
+//         var dropdown_element = document.createElement("option");
+//         dropdown_element.innerHTML = name.replaceAll("_", " ");
+//         dropdown_element.value = name;
+//         dataset_dropdown.appendChild(dropdown_element);
+//     });
+
+//     // update selected dataset name to the default
+//     dataset_name = dataset_names[0];
+// }
+
+
+const dataLookup = {};
+function updateDocLookup(){
+    snapshot.forEach(doc => {
+        dataLookup[doc.id] = doc.data();
+    });
+}
+
+function formatData(number, dataset_name){
+    // TODO: fill this out
+    let pre = "";
+    let post = "";
+    if(dataset_name.includes("fuente_de_ingreso")){
+        post = "%";
+    }else if(dataset_name.includes("fuente_de_ingreso")){
+        // TODO: for long numbers add in commas
+    }else if(dataset_name.includes("Porcentaje")){
+        post = "%";
+    }else if(dataset_name.includes("poblacion")){
+        post = "%";
+    }
+    return pre + number + post;
+}
+
+function generate_dataset_table(){
+    // check a neighborhood has been selected
+    if(! selected_CUSEC){
+        console.log("please select a neighborhood");
+        return
+    }
+
+    // clear old rows
+    const row_container = document.getElementById("row_container");
+    row_container.innerHTML = "";
+
+    // pull new names
+    const dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][dataset_table]); // can be pulled from any neighborhood as long as we have data for them all
+    // TODO: add failsafe for when we do not have data for a specific neighborhood
+    
+    // generate a row for each name
+    dataset_names.forEach(name => {
+        // each name needs an identifier column element and a number column element and a unit
+        const row = document.createElement("tr");
+        const identifier = document.createElement("td");
+        const number = document.createElement("td");
+
+        // fill columns
+        identifier.innerHTML = name.replaceAll("_", " ");
+        number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][dataset_table][name], name);
+
+        // add to container
+        row.appendChild(identifier);
+        row.appendChild(number);
+        row_container.appendChild(row);
+    });
+}
 
 
 async function fetchMyData() {
@@ -65,7 +132,7 @@ async function fetchMyData() {
     const colRef = collection(db, "Zones");
     console.log("database connected !");
 
-    const snapshot = await getDocs(colRef);
+    snapshot = await getDocs(colRef);
 
     console.log("data recieved!");
     
@@ -76,26 +143,24 @@ async function fetchMyData() {
 
     // generate a dropdown to put all of the statistics
     const dropdown = document.getElementById("statistics");
+    function update_tablename(e){
+        dataset_table = e.target.value;
+        generate_dataset_table();
+    }
+    dropdown.addEventListener("click", update_tablename);
     
-    const table_names = Object.keys(snapshot.docs[0].data()["datasets"]);
-    
-    table_names.forEach((pair) => {
+    const table_names = Object.keys(snapshot.docs[0].data()["datasets"]); // can be pulled from any dataset, so the first is used
+    table_names.forEach((name) => {
         var dropdown_element = document.createElement("option");
-        dropdown_element.innerHTML = pair;
-        dropdown_element.value = pair;
+        dropdown_element.innerHTML = name.replaceAll("_", " ");
+        dropdown_element.value = name;
         dropdown.appendChild(dropdown_element);
     });
 
-    const dataset_dropdown = document.getElementById("dataset");
+    // set the default table name so that the dataset names can be pulled
+    dataset_table = table_names[0];
 
-    const dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][table_names[0]]);
-    
-    dataset_names.forEach(name => {
-        var dropdown_element = document.createElement("option");
-        dropdown_element.innerHTML = name;
-        dropdown_element.value = name;
-        dataset_dropdown.appendChild(dropdown_element);
-    });
+    generate_dataset_table();
 
     // now, we can pull the geojson map, and add all the properties from firebase to each of the zones
 
@@ -105,18 +170,14 @@ async function fetchMyData() {
     )
     .then(geojsonData => {
         // Step 1: Create the lookup object
-        const incomeLookup = {};
-        snapshot.forEach(doc => {
-            incomeLookup[doc.id] = doc.data();
-        });
+        // call an update function so that it can be used globally
+        updateDocLookup();
 
         // Step 2: Use the lookup in your Leaflet layer
         L.geoJson(geojsonData, {
             style: function(feature) {
                 // Pull the income from our lookup table using the GeoJSON ID
-                const income = incomeLookup[feature.properties.CUSEC]["datasets"]["tabla_30944"]["Media de la renta por unidad de consumo"];
-                // console.log(income);
-                
+                const income = dataLookup[feature.properties.CUSEC]["datasets"]["tabla_30944"]["Media de la renta por unidad de consumo"];
                 return {
                     fillColor: getColor(income), // Use your existing color function
                     weight: 1,
@@ -127,16 +188,15 @@ async function fetchMyData() {
             onEachFeature: function(feature, layer) {
                 const CUSEC = feature.properties.CUSEC;
                 
-                // register the basic, built in leaflet popup
-                // layer.bindTooltip(`CUSEC number: ${CUSEC || 'No Data'} and $${incomeLookup[feature.properties.CUSEC]["datasets"]["tabla_30944"]["Media de la renta por unidad de consumo"]}`);
-
                 layer.on('click', function(e) {
-                    // Access properties of the clicked polygon
-                    // alert("You clicked on " + CUSEC);
-                    
                     // update the Statistics Sidebar
-                    let number = document.getElementById("stat_number");
-                    number.innerHTML = CUSEC;
+                    // CUSEC number
+                    const cusec_element = document.getElementById("CUSEC");
+                    cusec_element.innerHTML = CUSEC;
+                    selected_CUSEC = CUSEC;
+
+                    // generate table row for each stat
+                    generate_dataset_table();
                 });
             }
         }).addTo(map);
@@ -149,8 +209,3 @@ async function fetchMyData() {
 
 // Run it!
 fetchMyData();
-
-1
-// connect to Statistics Sidebar
-let number = document.getElementById("stat_number");
-number.innerHTML = "ff";
