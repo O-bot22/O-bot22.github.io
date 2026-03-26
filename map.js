@@ -55,9 +55,50 @@ function getHueGradient(value, min, max, hue) {
     
     return `hsl(${hue}, 100%, ${lightness}%)`;
 }
+// could add multi color if needed
+/**
+ * Maps a value to a color along a multi-stop gradient (RGB).
+ */
+function getMultiColorGradient(value, min, max, color1, color2, color3) {
+    // 1. Normalize the value to a 0-1 scale
+    const clamped = Math.max(min, Math.min(max, value));
+    const range = max - min;
+    let fade = range === 0 ? 0 : (clamped - min) / range;
+
+    let start = color1;
+    let end = color2;
+
+    // 2. If we have 3 colors, decide which half of the range we are in
+    if (color3) {
+        fade = fade * 2; // Split into two 0-1 ranges
+        if (fade >= 1) {
+            fade -= 1;     // Second half (color2 to color3)
+            start = color2;
+            end = color3;
+        } else {
+            // First half (color1 to color2)
+            start = color1;
+            end = color2;
+        }
+    }
+
+    // 3. Interpolate the R, G, and B values
+    const r = Math.round(start.r + (end.r - start.r) * fade);
+    const g = Math.round(start.g + (end.g - start.g) * fade);
+    const b = Math.round(start.b + (end.b - start.b) * fade);
+
+    return `rgb(${r}, ${g}, ${b})`;
+}
+// Example: Red to Yellow to Green
+const colors = {
+    red:    { r: 255, g: 0,   b: 0 },
+    yellow: { r: 255, g: 255, b: 0 },
+    green:  { r: 0,   g: 255, b: 0 }
+};
 
 // Global Data Selection Variables
 let selected_table = "";
+let old_table = "";
 let selected_CUSEC = null;
 let selected_data;
 let snapshot;
@@ -86,9 +127,38 @@ function formatData(number, dataset_name){
     return pre + number + post;
 }
 
-function newDatasetSelectedCallback(e){
-    const id = e.target.id;
+const highlight_color = "#c9ffc9";
+
+function highlightRow(id){
+    // get the data name
+    // update globally selected data
     selected_data = id.substring(0, id.length - 1);
+    // store which td was clicked
+    const e_type = id.substring(id.length - 1, id.length);
+    
+    // unhighlight all rows
+    const row_container = document.getElementById("row_container");
+    for(const child of row_container.children) {
+        for(const grandchild of child.children){
+            grandchild.style.backgroundColor = "white"; // TODO: fix color
+        }
+    }
+
+    // highlight the selected row
+    // change the base element
+    const td_element = document.getElementById(id);
+    td_element.style.backgroundColor = highlight_color;
+    // get the other element of the row
+    const other_element = document.getElementById(selected_data + (e_type == "#" ? "i" : "#"));
+    other_element.style.backgroundColor = highlight_color;
+}
+
+function newDatasetSelectedCallback(e){
+    // ! only the td elements are clickable, not the tr !
+
+    highlightRow(e.target.id);
+
+    // redraw the map
     drawHeatmap()
 }
 
@@ -109,7 +179,7 @@ function generate_selected_table(){
     
     // generate a row for each name
     dataset_names.forEach(name => {
-        // each name needs an identifier column element and a number column element and a unit
+        // each name needs an identifier column element and a number column element and a unit?
         const row = document.createElement("tr");
         const identifier = document.createElement("td");
         const number = document.createElement("td");
@@ -130,6 +200,13 @@ function generate_selected_table(){
         row.appendChild(number);
         row_container.appendChild(row);
     });
+
+    // if we switched tables, highlight the first heatmap and redraw it
+    if(old_table != selected_table){
+        highlightRow(dataset_names[0]+"i");
+        old_table = selected_table;
+        drawHeatmap();
+    }
 }
 
 // global map variables
@@ -162,11 +239,11 @@ function drawHeatmap(){
             console.error("Error pulling neighborhood data:", error);
         }
     })
-    console.log("pulled for all entries");
+    // console.log("pulled for all entries");
 
     const max = Math.max(...stat_dump);
     const min = Math.min(...stat_dump);
-    console.log("Max:\t"+max+"\nMin:\t"+min);
+    // console.log("Max:\t"+max+"\nMin:\t"+min);
 
     // Use the lookup in your Leaflet layer
     mapLayer = L.geoJson(geoJSON, {
@@ -200,6 +277,18 @@ function drawHeatmap(){
             });
         }
     }).addTo(map);
+
+    // update the legend
+    const left_box = document.getElementById("L");
+    const right_box = document.getElementById("R");
+
+    left_box.style = "background-color: " + getHueGradient(min, max, min, 200);
+    right_box.style = "background-color: " + getHueGradient(max, max, min, 200);
+
+    const left_label = document.getElementById("left-label");
+    const right_label = document.getElementById("right-label");
+    left_label.innerHTML = formatData(min, selected_data);
+    right_label.innerHTML = formatData(max, selected_data);
 }
 
 async function fetchMyData() {
@@ -237,7 +326,7 @@ async function fetchMyData() {
     // set the default table name so that the dataset names can be pulled
     selected_table = table_names[0];
 
-    generate_selected_table();
+    // generate_selected_table();
 
     // now, we can pull the geojson map, and add all the properties from firebase to each of the zones
 

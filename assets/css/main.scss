@@ -50,3 +50,14 @@ table{
 .sidebar {
   font-size: 16px;
 }
+
+.boxes {
+  // width: 1em;
+  padding-left : 40px;
+  padding-right: 40px;
+}
+
+// always keep it opaque
+.sidebar {
+  opacity: 1;
+}
