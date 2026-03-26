@@ -129,6 +129,10 @@ function formatData(number, dataset_name){
 
 const highlight_color = "#c9ffc9";
 
+const table_name_lookup = {
+    "tabla_30945": "Distribución de Fuentes de Ingreso",
+}
+
 function highlightRow(id){
     // get the data name
     // update globally selected data
@@ -318,15 +322,17 @@ async function fetchMyData() {
     const table_names = Object.keys(snapshot.docs[0].data()["datasets"]); // can be pulled from any dataset, so the first is used
     table_names.forEach((name) => {
         var dropdown_element = document.createElement("option");
-        dropdown_element.innerHTML = name.replaceAll("_", " ");
+        if(table_name_lookup[name]){
+            dropdown_element.innerHTML = table_name_lookup[name]; // print a human readable tablename
+        }else{
+            dropdown_element.innerHTML = name;
+        }
         dropdown_element.value = name;
         dropdown.appendChild(dropdown_element);
     });
 
     // set the default table name so that the dataset names can be pulled
     selected_table = table_names[0];
-
-    // generate_selected_table();
 
     // now, we can pull the geojson map, and add all the properties from firebase to each of the zones
 
