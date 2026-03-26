@@ -1,3 +1,2 @@
-14:40:03.533 [NamespaceSystem-akka.actor.default-dispatcher-5] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
-14:40:03.665 [main] INFO com.firebase.server.forge.App$ - Listening at 127.0.0.1:9000
-14:41:26.788 [NamespaceSystem-akka.actor.default-dispatcher-6] INFO com.firebase.core.namespace.NamespaceActor - puerto-real-energy-poverty successfully activated FBKV (SurveyIdle(0)) wait: 110ms, init: 0ms
+14:42:44.483 [NamespaceSystem-akka.actor.default-dispatcher-5] INFO akka.event.slf4j.Slf4jLogger - Slf4jLogger started
+14:42:44.905 [main] INFO com.firebase.server.forge.App$ - Listening at 127.0.0.1:9000

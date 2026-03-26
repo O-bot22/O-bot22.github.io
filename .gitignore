@@ -17,3 +17,4 @@ Gemfile.lock
 
 env/**
 
+_site/feed.xml

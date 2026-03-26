@@ -1,0 +1,12 @@
+# _config_dev.yml
+theme: "minimal-mistakes-jekyll"
+remote_theme: none
+
+# Explicitly exclude the broken plugin
+plugins:
+  - jekyll-include-cache
+  - jekyll-paginate
+  - jekyll-sitemap
+  - jekyll-gist
+  - jekyll-feed
+# DO NOT include jekyll-remote-theme in this list
