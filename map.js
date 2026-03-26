@@ -10,7 +10,6 @@ var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
     attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'}
 );
 
-
 // create map instance centered around Puerto Real with the map layers
 var map = L.map('map', {
     center: [36.531517590929056, -6.190161615515397],
@@ -34,39 +33,34 @@ if (location.hostname === "127.0.0.1") {
 console.log("firebase imported!");
 
 
-function getColor(d) {
-    return d > 20000 ? '#800026' :
-           d > 10000 ? '#BD0026' :
-                       '#FFEDA0';
+/**
+ * Generates an HSL color along a gradient of a specific hue.
+ * @param {number} value - The input number.
+ * @param {number} min - The minimum value of the range.
+ * @param {number} max - The maximum value of the range.
+ * @param {number} hue - The hue angle (0-360).
+ * @returns {string} - A CSS HSL color string.
+ */
+function getHueGradient(value, min, max, hue) {
+    // 1. Clamp the value to ensure it stays within the min/max bounds
+    // const clamped = Math.max(min, Math.min(max, value));
+    
+    // 2. Calculate the percentage (0 to 1) of the value within the range
+    const range = max - min;
+    const percentage = range === 0 ? 0 : (value - min) / range;
+    
+    // 3. Map the percentage to Lightness (e.g., 90% is light, 30% is dark)
+    // Adjust these numbers to change how "light" or "dark" the gradient gets
+    const lightness = 90 - (percentage * 60); 
+    
+    return `hsl(${hue}, 100%, ${lightness}%)`;
 }
 
 // Global Data Selection Variables
-let dataset_table = "";
+let selected_table = "";
 let selected_CUSEC = null;
+let selected_data;
 let snapshot;
-
-// function generate_dataset_dropdown(){
-//     if(! snapshot){
-//         console.log("Firebase not pulled yet!");
-//         return;
-//     }
-
-//     const dataset_dropdown = document.getElementById("dataset");
-    
-//     // const table_names = Object.keys(snapshot.docs[0].data()["datasets"]);
-//     const dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][dataset_table]);
-
-//     dataset_dropdown.innerHTML = "";
-//     dataset_names.forEach(name => {
-//         var dropdown_element = document.createElement("option");
-//         dropdown_element.innerHTML = name.replaceAll("_", " ");
-//         dropdown_element.value = name;
-//         dataset_dropdown.appendChild(dropdown_element);
-//     });
-
-//     // update selected dataset name to the default
-//     dataset_name = dataset_names[0];
-// }
 
 
 const dataLookup = {};
@@ -92,8 +86,14 @@ function formatData(number, dataset_name){
     return pre + number + post;
 }
 
-function generate_dataset_table(){
-    // check a neighborhood has been selected
+function newDatasetSelectedCallback(e){
+    const id = e.target.id;
+    selected_data = id.substring(0, id.length - 1);
+    drawHeatmap()
+}
+
+function generate_selected_table(){
+    // check that a neighborhood has been selected
     if(! selected_CUSEC){
         console.log("please select a neighborhood");
         return
@@ -104,7 +104,7 @@ function generate_dataset_table(){
     row_container.innerHTML = "";
 
     // pull new names
-    const dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][dataset_table]); // can be pulled from any neighborhood as long as we have data for them all
+    const dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_table]); // can be pulled from any neighborhood as long as we have data for them all
     // TODO: add failsafe for when we do not have data for a specific neighborhood
     
     // generate a row for each name
@@ -115,8 +115,15 @@ function generate_dataset_table(){
         const number = document.createElement("td");
 
         // fill columns
+        // every id must be different, so append an i or #, so that it can later be pulled to redraw the heatmap
         identifier.innerHTML = name.replaceAll("_", " ");
-        number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][dataset_table][name], name);
+        identifier.id = name+"i";
+        number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
+        number.id = name+"#";
+
+        // add event listener so that each box can update the map
+        // adding it to the row gives it to all columns
+        row.addEventListener("click", newDatasetSelectedCallback);
 
         // add to container
         row.appendChild(identifier);
@@ -125,6 +132,75 @@ function generate_dataset_table(){
     });
 }
 
+// global map variables
+let mapLayer;
+let geoJSON;
+
+function drawHeatmap(){
+    // Create the lookup object
+    // call an update function so that it can be used globally
+    updateDocLookup();
+
+    // remove the layer from the map so that it can be re added
+    if(! mapLayer){
+        console.log("no map layer has been made yet");
+    }else{
+        mapLayer.remove();
+    }
+
+    // pull the statistic for each neighborhood to get max and min numbers
+    // store each value in an array for processing at the end
+    const stat_dump = [];
+    Object.entries(dataLookup).forEach(data => {
+        if(data[0] == "_query" || data[0] == "_readTime"){
+            return
+        }
+        try {
+            stat_dump.push(data[1]["datasets"][selected_table][selected_data]);
+        } catch (error){ 
+            console.log("CUSEC: "+data[0]);
+            console.error("Error pulling neighborhood data:", error);
+        }
+    })
+    console.log("pulled for all entries");
+
+    const max = Math.max(...stat_dump);
+    const min = Math.min(...stat_dump);
+    console.log("Max:\t"+max+"\nMin:\t"+min);
+
+    // Use the lookup in your Leaflet layer
+    mapLayer = L.geoJson(geoJSON, {
+        style: function(feature) {
+            // Pull the income from our lookup table using the GeoJSON ID
+            // check that a dataset has been selected already
+            let statistic;
+            if(selected_data){
+                // pull the selected statistic for that CUSEC to be used for color generation
+                statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
+            }
+            return {
+                fillColor: getHueGradient(statistic, max, min, 200), // TODO: get rid of magic number for color
+                weight: 1,
+                fillOpacity: 0.7,
+                color: 'white'
+            };
+        },
+        onEachFeature: function(feature, layer) {
+            const CUSEC = feature.properties.CUSEC;
+            
+            layer.on('click', function(e) {
+                // update the Statistics Sidebar
+                // CUSEC number
+                const cusec_element = document.getElementById("CUSEC");
+                cusec_element.innerHTML = CUSEC;
+                selected_CUSEC = CUSEC;
+
+                // generate table row for each stat
+                generate_selected_table();
+            });
+        }
+    }).addTo(map);
+}
 
 async function fetchMyData() {
   try {
@@ -132,6 +208,7 @@ async function fetchMyData() {
     const colRef = collection(db, "Zones");
     console.log("database connected !");
 
+    // store the firebase response globally
     snapshot = await getDocs(colRef);
 
     console.log("data recieved!");
@@ -144,8 +221,8 @@ async function fetchMyData() {
     // generate a dropdown to put all of the statistics
     const dropdown = document.getElementById("statistics");
     function update_tablename(e){
-        dataset_table = e.target.value;
-        generate_dataset_table();
+        selected_table = e.target.value;
+        generate_selected_table();
     }
     dropdown.addEventListener("click", update_tablename);
     
@@ -158,9 +235,9 @@ async function fetchMyData() {
     });
 
     // set the default table name so that the dataset names can be pulled
-    dataset_table = table_names[0];
+    selected_table = table_names[0];
 
-    generate_dataset_table();
+    generate_selected_table();
 
     // now, we can pull the geojson map, and add all the properties from firebase to each of the zones
 
@@ -169,37 +246,10 @@ async function fetchMyData() {
         response.json()
     )
     .then(geojsonData => {
-        // Step 1: Create the lookup object
-        // call an update function so that it can be used globally
-        updateDocLookup();
-
-        // Step 2: Use the lookup in your Leaflet layer
-        L.geoJson(geojsonData, {
-            style: function(feature) {
-                // Pull the income from our lookup table using the GeoJSON ID
-                const income = dataLookup[feature.properties.CUSEC]["datasets"]["tabla_30944"]["Media de la renta por unidad de consumo"];
-                return {
-                    fillColor: getColor(income), // Use your existing color function
-                    weight: 1,
-                    fillOpacity: 0.7,
-                    color: 'white'
-                };
-            },
-            onEachFeature: function(feature, layer) {
-                const CUSEC = feature.properties.CUSEC;
-                
-                layer.on('click', function(e) {
-                    // update the Statistics Sidebar
-                    // CUSEC number
-                    const cusec_element = document.getElementById("CUSEC");
-                    cusec_element.innerHTML = CUSEC;
-                    selected_CUSEC = CUSEC;
-
-                    // generate table row for each stat
-                    generate_dataset_table();
-                });
-            }
-        }).addTo(map);
+        // store globally for redrawing
+        geoJSON = geojsonData;
+        // draw for the first time
+        drawHeatmap();
     });
 
   } catch (error) {
