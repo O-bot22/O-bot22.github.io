@@ -131,12 +131,25 @@ const highlight_color = "#c9ffc9";
 
 const table_name_lookup = {
     "tabla_30945": "Distribución de Fuentes de Ingreso",
+    "tabla_30946": "Porcentaje de población con ingresos por unidad de consumo por debajo de determinados umbrales fijos por sexo",
+    "tabla_30949": "Porcentaje de población con ingresos por unidad de consumo por debajo/encima de determinados umbrales relativos por sexo",
+    "tabla_30952": "Indicadores Demográficos",
+    "tabla_37689": "Índice de Gini y Distribución de la renta P80/P20",
+    "tabla_66685": "Nivel de formación alcanzado",
+    "tabla_69142": "Población por nacionalidad (española/extranjera), edad y sexo",
+    "tabla_66687": "Relación con la actividad económica",
+    "tabla_30944": "Indicadores de renta media y mediana"
 }
 
 function highlightRow(id){
     // get the data name
-    // update globally selected data
-    selected_data = id.substring(0, id.length - 1);
+    if(id){
+        // update globally selected data
+        selected_data = id.substring(0, id.length - 1);
+    }else{
+        // if no new element was clicked, highlight the last selected row and arbitrarily start with the number element
+        id = selected_data+"#"
+    }
     // store which td was clicked
     const e_type = id.substring(id.length - 1, id.length);
     
@@ -278,6 +291,9 @@ function drawHeatmap(){
 
                 // generate table row for each stat
                 generate_selected_table();
+
+                // TODO: somehow keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
+                highlightRow();
             });
         }
     }).addTo(map);
