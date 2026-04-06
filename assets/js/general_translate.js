@@ -1,0 +1,53 @@
+// For every page, add a button at the top to toggle between spanish and english
+// also, translate the mastheaders
+// also, translate anything that is in the translatable class
+
+
+let navbar = document.getElementById("site-nav");
+let lang_button = document.createElement("a");
+
+const params = new URLSearchParams(window.location.search);
+const lang = params.get("lang") || "en";
+
+const base_url = location.origin + location.pathname;
+
+if(lang == "en"){
+    lang_button.innerHTML = "Español";
+    lang_button.href = base_url + "?lang=es";
+}else{
+    lang_button.innerHTML = "English";
+    lang_button.href = base_url; // could also be + "?lang=en" but this is cleaner
+}
+
+navbar.appendChild(lang_button);
+
+// only change the contents if is is not english, since that is the default
+if(lang != "en"){
+    // pull the translation file
+    fetch(`/lang/${lang}.json`).then(res => {
+        res.json().then(translations => {
+            // once json has been processed, find the meastead list items, and them change the text of their links
+            let elems = document.getElementsByClassName("masthead__menu-item"); 
+            Array.from(elems).forEach(elem => {
+                // access the <a> element of each <li> element
+                // entries in the translation JSON should be labeled with the original page name
+                elem.children[0].innerHTML = translations[elem.children[0].innerHTML];
+            });
+        })
+    })
+    
+    // Fill in page for the selected language
+    changeLanguage(lang);
+}
+
+async function changeLanguage(lang) {
+    // pull and process the translation file
+    const res = await fetch(`/lang/${lang}.json`);
+    const translations = await res.json();
+    
+    // dynamically translate elements by id
+    let elems = document.getElementsByClassName("translatable");
+    Array.from(elems).forEach(elem => {
+        elem.innerHTML = translations[elem.id];
+    });
+}

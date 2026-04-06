@@ -1,15 +1,11 @@
-<label for="statistics">Choose a dataset table:</label>
+<label id="dataset-label" class="translatable" for="statistics">Choose a dataset table:</label>
 <select name="statistics" id="statistics">
 </select>
-
-<!-- <label for="dataset">Choose a dataset:</label>
-<select name="dataset" id="dataset">
-</select> -->
 
 <table>
     <tbody>
         <tr>
-        <th>
+        <th id="statistics-header" class="translatable">
             Statistics
         </th>
         </tr>
@@ -18,7 +14,7 @@
             CUSEC
         </td>
         <td id="CUSEC">
-            Stat number
+            -
         </td>
         </tr>
         <!-- For spacing -->
@@ -29,7 +25,7 @@
     </tbody>
     <tbody  id="row_container">
         <tr>
-            <td  colspan="2" style="width:100%">
+            <td id="initial-row" class="translatable" colspan="2" style="width:100%">
                 Please select a neighborhood to get started...
             </td>
         </tr>
@@ -42,12 +38,12 @@
 <table>
     <tbody>
         <tr>
-            <td>Min</td>
-            <td style="text-align: right">Max</td>
+            <td id="minimum-label" class="translatable">Min</td>
+            <td id="maximum-label" class="translatable" style="text-align: right">Max</td>
         </tr>
         <tr>
-            <th id="left-label">Left</th>
-            <th id="right-label" style="text-align: right">Right</th>
+            <th id="left-label"></th>
+            <th id="right-label" style="text-align: right"></th>
         </tr>
         <tr>
             <td id="L" class="boxes"></td>
