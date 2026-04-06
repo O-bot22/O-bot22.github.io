@@ -6,12 +6,22 @@ const highlight_color = "#c9ffc9";
 const gradient_hue = 200;
 
 
+// Get language from URL
+const params = new URLSearchParams(window.location.search);
+const lang = params.get("lang") || "en";
+// can be set with /map/?lang=es
+
+// pull translation file and store globally
+const res = await fetch(`/lang/${lang}.json`);
+let translations = await res.json();
+
+
 // Load Background Map
 
 // base map
 var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'}
+    attribution: translations["Map Attribution"]}
 );
 
 // create map instance centered around Puerto Real with the map layers
@@ -25,14 +35,14 @@ var map = L.map('map', {
 // Set up firebase
 
 // Check if running locally
-console.log(location.hostname);
+// console.log(location.hostname);
 if (location.hostname === "127.0.0.1") {
-    console.log("connecting to emulator...")
+    // console.log("connecting to emulator...")
     // 8080 is the default Firestore emulator port
     connectFirestoreEmulator(db, 'localhost', 8888);
 }
 
-console.log("firebase imported!");
+// console.log("firebase imported!");
 
 
 /**
@@ -128,16 +138,32 @@ function formatData(number, dataset_name){
     return pre + number + post;
 }
 
-const table_name_lookup = {
-    "tabla_30945": "Distribución de Fuentes de Ingreso",
-    "tabla_30946": "Porcentaje de población con ingresos por unidad de consumo por debajo de determinados umbrales fijos por sexo",
-    "tabla_30949": "Porcentaje de población con ingresos por unidad de consumo por debajo/encima de determinados umbrales relativos por sexo",
-    "tabla_30952": "Indicadores Demográficos",
-    "tabla_37689": "Índice de Gini y Distribución de la renta P80/P20",
-    "tabla_66685": "Nivel de formación alcanzado",
-    "tabla_69142": "Población por nacionalidad (española/extranjera), edad y sexo",
-    "tabla_66687": "Relación con la actividad económica",
-    "tabla_30944": "Indicadores de renta media y mediana"
+let table_name_lookup;
+// maybe it should just be in spanish, since the data was published in spanish and the datanames are in spanish?
+if(lang == "es"){
+    table_name_lookup = {
+        "tabla_30945": "Distribución de Fuentes de Ingreso",
+        "tabla_30946": "Porcentaje de población con ingresos por unidad de consumo por debajo de determinados umbrales fijos por sexo",
+        "tabla_30949": "Porcentaje de población con ingresos por unidad de consumo por debajo/encima de determinados umbrales relativos por sexo",
+        "tabla_30952": "Indicadores Demográficos",
+        "tabla_37689": "Índice de Gini y Distribución de la renta P80/P20",
+        "tabla_66685": "Nivel de formación alcanzado",
+        "tabla_69142": "Población por nacionalidad (española/extranjera), edad y sexo",
+        "tabla_66687": "Relación con la actividad económica",
+        "tabla_30944": "Indicadores de renta media y mediana"
+    }
+}else{
+    table_name_lookup = {
+        "tabla_30945": "Distribution of Sources of Income",
+        "tabla_30946": "Percentage of population with income per consumption unit below certain fixed thresholds by sex",
+        "tabla_30949": "Percentage of population with income per consumption unit below/above certain relative thresholds by sex",
+        "tabla_30952": "Demographic Indicators",
+        "tabla_37689": "Gini Index and Income Distribution (P80/P20)",
+        "tabla_66685": "Level of Education Attained",
+        "tabla_69142": "Population by Nationality (Spanish/Foreign), Age, and Sex",
+        "tabla_66687": "Relationship with Economic Activity",
+        "tabla_30944": "Indicators of Average and Median Income"
+    }
 }
 
 function highlightRow(id){
@@ -236,7 +262,7 @@ function drawHeatmap(){
 
     // remove the layer from the map so that it can be re added
     if(! mapLayer){
-        console.log("no map layer has been made yet");
+        // console.log("no map layer has been made yet");
     }else{
         mapLayer.remove();
     }
@@ -272,7 +298,7 @@ function drawHeatmap(){
                 statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
             }
             return {
-                fillColor: getHueGradient(statistic, min, max, gradient_hue), // TODO: get rid of magic number for color
+                fillColor: getHueGradient(statistic, min, max, gradient_hue),
                 weight: 1,
                 fillOpacity: 0.7,
                 color: 'white'
@@ -291,7 +317,7 @@ function drawHeatmap(){
                 // generate table row for each stat
                 generate_selected_table();
 
-                // TODO: somehow keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
+                // keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
                 highlightRow();
             });
         }
@@ -310,7 +336,7 @@ function drawHeatmap(){
         left_label.innerHTML = formatData(min, selected_data);
         right_label.innerHTML = formatData(max, selected_data);
     }else{
-        console.log("No dataset has been selected yet, cannot make a legend");
+        // No dataset has been selected yet, cannot make a legend
         left_label.innerHTML = "N/A";
         right_label.innerHTML = "N/A";
     }
@@ -318,14 +344,14 @@ function drawHeatmap(){
 
 async function fetchMyData() {
   try {
-    console.log("connecting to database...");
+    // console.log("connecting to database...");
     const colRef = collection(db, "Zones");
-    console.log("database connected !");
+    // console.log("database connected !");
 
     // store the firebase response globally
     snapshot = await getDocs(colRef);
 
-    console.log("data recieved!");
+    // console.log("data recieved!");
     
     if (snapshot.empty) {
       console.log("No documents found.");
@@ -375,3 +401,21 @@ async function fetchMyData() {
 
 // Run it!
 fetchMyData();
+
+// Fill in page for the selected language
+changeLanguage(lang);
+
+async function changeLanguage(lang) {
+    // update the global translation variable
+    const res = await fetch(`/lang/${lang}.json`);
+    translations = await res.json();
+
+    let title_div = document.getElementById("page-title");
+    title_div.children[0].innerText = translations["Map Title"];
+    
+    // do this dynamically
+    let elems = document.getElementsByClassName("translatable");
+    Array.from(elems).forEach(elem => {
+        elem.innerHTML = translations[elem.id];
+    });
+}

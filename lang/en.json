@@ -1,0 +1,10 @@
+{
+    "Map Title": "Interactive Leaflet Map",
+    "Map Attribution":"© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France",
+
+    "dataset-label": "Choose a dataset:",
+    "statistics-header": "Statistics",
+    "initial-row": "Please select a neighborhood to get started...",
+    "minimum-label": "Min",
+    "maximum-label": "Max"
+}
