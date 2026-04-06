@@ -1,10 +1,14 @@
-// create base map layer
-var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-});
+import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
 
-// other optional other base map
+// Style Constants
+
+const highlight_color = "#c9ffc9";
+const gradient_hue = 200;
+
+
+// Load Background Map
+
+// base map
 var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'}
@@ -18,11 +22,9 @@ var map = L.map('map', {
 });
 
 
-
 // Set up firebase
-import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
 
-// Check if you are running locally
+// Check if running locally
 console.log(location.hostname);
 if (location.hostname === "127.0.0.1") {
     console.log("connecting to emulator...")
@@ -89,12 +91,6 @@ function getMultiColorGradient(value, min, max, color1, color2, color3) {
 
     return `rgb(${r}, ${g}, ${b})`;
 }
-// Example: Red to Yellow to Green
-const colors = {
-    red:    { r: 255, g: 0,   b: 0 },
-    yellow: { r: 255, g: 255, b: 0 },
-    green:  { r: 0,   g: 255, b: 0 }
-};
 
 // Global Data Selection Variables
 let selected_table = "";
@@ -115,19 +111,22 @@ function formatData(number, dataset_name){
     // TODO: fill this out
     let pre = "";
     let post = "";
-    if(dataset_name.includes("fuente_de_ingreso")){
-        post = "%";
-    }else if(dataset_name.includes("fuente_de_ingreso")){
-        // TODO: for long numbers add in commas
-    }else if(dataset_name.includes("Porcentaje")){
-        post = "%";
-    }else if(dataset_name.includes("poblacion")){
-        post = "%";
-    }
+    try{
+        if(dataset_name.includes("fuente_de_ingreso")){
+            post = "%";
+        }else if(dataset_name.includes("fuente_de_ingreso")){
+            // TODO: for long numbers add in commas
+        }else if(dataset_name.includes("Porcentaje")){
+            post = "%";
+        }else if(dataset_name.includes("poblacion")){
+            post = "%";
+        }
+    } catch (e){
+        console.log(dataset_name);
+        console.log(e);
+    };
     return pre + number + post;
 }
-
-const highlight_color = "#c9ffc9";
 
 const table_name_lookup = {
     "tabla_30945": "Distribución de Fuentes de Ingreso",
@@ -273,7 +272,7 @@ function drawHeatmap(){
                 statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
             }
             return {
-                fillColor: getHueGradient(statistic, max, min, 200), // TODO: get rid of magic number for color
+                fillColor: getHueGradient(statistic, min, max, gradient_hue), // TODO: get rid of magic number for color
                 weight: 1,
                 fillOpacity: 0.7,
                 color: 'white'
@@ -302,13 +301,19 @@ function drawHeatmap(){
     const left_box = document.getElementById("L");
     const right_box = document.getElementById("R");
 
-    left_box.style = "background-color: " + getHueGradient(min, max, min, 200);
-    right_box.style = "background-color: " + getHueGradient(max, max, min, 200);
+    left_box.style = "background-color: " + getHueGradient(min, min, max, gradient_hue);
+    right_box.style = "background-color: " + getHueGradient(max, min, max, gradient_hue);
 
     const left_label = document.getElementById("left-label");
     const right_label = document.getElementById("right-label");
-    left_label.innerHTML = formatData(min, selected_data);
-    right_label.innerHTML = formatData(max, selected_data);
+    if(selected_data){
+        left_label.innerHTML = formatData(min, selected_data);
+        right_label.innerHTML = formatData(max, selected_data);
+    }else{
+        console.log("No dataset has been selected yet, cannot make a legend");
+        left_label.innerHTML = "N/A";
+        right_label.innerHTML = "N/A";
+    }
 }
 
 async function fetchMyData() {
