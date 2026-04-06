@@ -33,6 +33,11 @@ input[type=radio]:checked {
   font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace; font-size: 1.25em;
 }
 
+#map {
+  height: 650px;
+  width: 100%; 
+}
+
 /* For the Statistics Table */
 table{
   display: flex;
@@ -43,7 +48,11 @@ table{
   max-width: 1560px;
 }
 
-.page__footer{
+.page__footer div{
+  margin-top: 1em;
+}
+
+.page__footer footer{
   margin-top: 1em;
 }
 
