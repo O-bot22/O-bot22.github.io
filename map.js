@@ -14,6 +14,9 @@ const lang = params.get("lang") || "en";
 // pull translation file and store globally
 const res = await fetch(`/lang/${lang}.json`);
 let translations = await res.json();
+// tablename translation file
+const tables_res = await fetch('/lang/datasets-'+lang+'.json');
+let dataset_translations = await tables_res.json();
 
 
 // Load Background Map
@@ -228,7 +231,13 @@ function generate_selected_table(){
 
         // fill columns
         // every id must be different, so append an i or #, so that it can later be pulled to redraw the heatmap
-        identifier.innerHTML = name.replaceAll("_", " ");
+        // translate name to proper language
+        const translated_name = dataset_translations[name.replaceAll("_", " ")];
+        if(translated_name){
+            identifier.innerHTML = translated_name;
+        }else{
+            identifier.innerHTML = name.replaceAll("_", " ");
+        }
         identifier.id = name+"i";
         number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
         number.id = name+"#";
