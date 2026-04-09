@@ -61,3 +61,9 @@ Array.from(elems).forEach(elem => {
         elem.children[0].target = "_blank";
     }
 });
+
+// also also super sneaky add the favicon to the page, since it is not included in the header
+let link = document.createElement("link");
+link.rel = "icon";
+link.href = "/assets/images/logo.png";
+document.head.appendChild(link);
