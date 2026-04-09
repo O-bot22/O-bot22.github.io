@@ -51,3 +51,13 @@ async function changeLanguage(lang) {
         elem.innerHTML = translations[elem.id];
     });
 }
+
+// also sneaky change the link to the Energy Usage Tips to open the PDF in a new tab
+let elems = document.getElementsByClassName("masthead__menu-item");
+Array.from(elems).forEach(elem => {
+    // access the <a> element of each <li> element
+    // if the link is pointing to the brochure, we know that is the one we want to change
+    if(elem.children[0].href == window.location.origin + "/assets/data/Puerto%20Real%20Energy%20Brochure.pdf"){
+        elem.children[0].target = "_blank";
+    }
+});
