@@ -4,6 +4,7 @@ import { db, collection, getDocs, connectFirestoreEmulator, query, where } from 
 
 const highlight_color = "#c9ffc9";
 const gradient_hue = 200;
+const hover_color = "#66ff66";
 
 
 // Get language from URL
@@ -204,7 +205,8 @@ function newDatasetSelectedCallback(e){
     highlightRow(e.target.id);
 
     // redraw the map
-    drawHeatmap()
+    drawHeatmap();
+    // TODO: make sure when the heatmap is redrawn, the same neighborhood is still highlighted
 }
 
 function generate_selected_table(){
@@ -296,7 +298,8 @@ function drawHeatmap(){
     const min = Math.min(...stat_dump);
     // console.log("Max:\t"+max+"\nMin:\t"+min);
 
-    // Use the lookup in your Leaflet layer
+    // Use the lookup in the Leaflet layer
+    console.log(" drawing map layer...");
     mapLayer = L.geoJson(geoJSON, {
         style: function(feature) {
             // Pull the income from our lookup table using the GeoJSON ID
@@ -315,8 +318,28 @@ function drawHeatmap(){
         },
         onEachFeature: function(feature, layer) {
             const CUSEC = feature.properties.CUSEC;
+
+            // Check if the feature has properties and a specific field (e.g., 'name')
+            // if (feature.properties && feature.properties.name) {
+            layer.bindPopup(CUSEC, {
+                closeButton: false, 
+                offset: L.point(0, -10) // Prevents popup from flickering under the cursor
+            });
+            // ^ appears on click by default
             
             layer.on('click', function(e) {
+                // unhighlight all other popups
+                mapLayer.eachLayer(function(l) {
+                    if(l != layer){
+                        l.setStyle({ weight: 1, color: 'white', dashArray: '', fillOpacity: 0.7 });
+                    }
+                });
+
+                // highlight the selected neighborhood
+                // var layer = e.target;
+                layer.setStyle({ weight: 5, color: '#666', dashArray: '', fillOpacity: 0.7 });
+                layer.bringToFront(); // Ensures the border highlight is visible above other layers
+
                 // update the Statistics Sidebar
                 // CUSEC number
                 const cusec_element = document.getElementById("CUSEC");
@@ -329,6 +352,52 @@ function drawHeatmap(){
                 // keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
                 highlightRow();
             });
+
+            layer.on('mouseover', function(e) {
+                // close all other popups
+                mapLayer.eachLayer(function(l) {
+                    if(l != layer){
+                        l.closePopup();
+                    }
+                });
+
+                // show the selected popup
+                layer.openPopup();
+                // TODO: get the display name of the tables and stats to show in the popup instead of just the raw data name, which is not very user friendly
+                const display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
+                
+                layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
+                    closeButton: false, 
+                    offset: L.point(0, -10) // Prevents popup from flickering under the cursor
+                });
+
+                // unhighlight all other popups except the currently selected one
+                mapLayer.eachLayer(function(l) {
+                    if(l.feature.properties.CUSEC == selected_CUSEC){
+                        console.log(selected_CUSEC + "is the selected CUSEC");
+                    }
+                    if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
+                        l.setStyle({ weight: 1, color: 'white', dashArray: '', fillOpacity: 0.7 });
+                    }
+                });
+
+                // light highlight the selected neighborhood
+                // var layer = e.target;
+                layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: 0.7 });
+                layer.bringToFront(); // Ensures the border highlight is visible above other layers
+            });
+
+            // layer.on('mouseout', function(e){
+            //     // unhighlight the neighborhood when the mouse leaves, but only if it is not the currently selected neighborhood
+            //     if(selected_CUSEC == CUSEC){
+            //         return
+            //     }
+            //     var layer = e.target;
+            //     layer.setStyle({ weight: 1, color: 'white', dashArray: '', fillOpacity: 0.7 });
+            //     layer.bringToFront(); // Ensures the border highlight is visible above other layers
+                
+            //     layer.closePopup();
+            // });
         }
     }).addTo(map);
 
