@@ -1,10 +1,14 @@
 import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
 
 // Style Constants
-
 const highlight_color = "#c9ffc9";
 const gradient_hue = 200;
 const hover_color = "#66ff66";
+const selected_color = '#000000';
+const left_color =  "#2a7b9b";
+const middle_color = "#FFFFFF";
+const right_color = "#FF0000";
+const gradient_opacity = .7;
 
 
 // Get language from URL
@@ -42,7 +46,6 @@ var map = L.map('map', {
 // console.log(location.hostname);
 if (location.hostname === "127.0.0.1") {
     // console.log("connecting to emulator...")
-    // 8080 is the default Firestore emulator port
     connectFirestoreEmulator(db, 'localhost', 8888);
 }
 
@@ -98,10 +101,22 @@ function getMultiColorGradient(value, min, max, color1, color2, color3) {
         }
     }
 
+    // 2.5 Parse strings for fading
+    const start_rgb = {
+        r: parseInt(start.slice(1, 3), 16),
+        g: parseInt(start.slice(3, 5), 16),
+        b: parseInt(start.slice(5, 7), 16),
+    };
+    const end_rgb = {
+        r: parseInt(end.slice(1, 3), 16),
+        g: parseInt(end.slice(3, 5), 16),
+        b: parseInt(end.slice(5, 7), 16),
+    };
+
     // 3. Interpolate the R, G, and B values
-    const r = Math.round(start.r + (end.r - start.r) * fade);
-    const g = Math.round(start.g + (end.g - start.g) * fade);
-    const b = Math.round(start.b + (end.b - start.b) * fade);
+    const r = Math.round(start_rgb.r + (end_rgb.r - start_rgb.r) * fade);
+    const g = Math.round(start_rgb.g + (end_rgb.g - start_rgb.g) * fade);
+    const b = Math.round(start_rgb.b + (end_rgb.b - start_rgb.b) * fade);
 
     return `rgb(${r}, ${g}, ${b})`;
 }
@@ -122,7 +137,6 @@ function updateDocLookup(){
 }
 
 function formatData(number, dataset_name){
-    // TODO: fill this out
     let pre = "";
     let post = "";
     try{
@@ -132,8 +146,32 @@ function formatData(number, dataset_name){
             // TODO: for long numbers add in commas
         }else if(dataset_name.includes("Porcentaje")){
             post = "%";
-        }else if(dataset_name.includes("poblacion")){
+        }else if(dataset_name.includes("poblacion") && dataset_name != "poblacion_16_y_mas_total"){ // needs to exclude the total population over 16, which is just a number that needs commas, not a percentage
+            // needs to exclude the populations under ecenomic activity, which are just number of people
+            if(selected_table != "tabla_66687"){
+                post = "%";
+            }
+        }else if(dataset_name == "tasa_paro_hombres" || dataset_name == "tasa_paro_mujeres" || dataset_name == "tasa_empleo_mujeres" || dataset_name == "tasa_empleo_hombres" || dataset_name == "tasa_empleo_total" || dataset_name == "tasa_paro_total"){
+            number = (number*100).toFixed(2);
             post = "%";
+        }else if(dataset_name.includes("tasa")){
+            console.log("found tasa: "+dataset_name);
+        }else if(selected_table == "tabla_30944"){
+            pre = "€";
+            // add commas
+            number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }else if(number > 1000){
+            // add commas
+            number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        // once all other formatting is done, switch the decimal point to a comma if in spanish and the comma to a decimal point, since that is the standard formatting in spanish, but not if in english, since that is the standard formatting in english
+        if(lang == "es"){
+            // change to a temp character to mark decimal points
+            number = number.toString().replaceAll(".", "@");
+            // change commas to decimal points
+            number = number.toString().replaceAll(",", ".");
+            // change temp character to commas
+            number = number.toString().replaceAll("@", ",");
         }
     } catch (e){
         console.log(dataset_name);
@@ -204,6 +242,8 @@ function newDatasetSelectedCallback(e){
 
     highlightRow(e.target.id);
 
+    console.log("clicked on dataset: "+e.target.id);
+
     // redraw the map
     drawHeatmap();
     // TODO: make sure when the heatmap is redrawn, the same neighborhood is still highlighted
@@ -238,7 +278,10 @@ function generate_selected_table(){
         if(translated_name){
             identifier.innerHTML = translated_name;
         }else{
-            identifier.innerHTML = name.replaceAll("_", " ");
+            // if no translation is found, just print the raw name with underscores replaced with spaces, which is more readable at least and capitalize the first letter of the first word
+            let formatted_name = name.charAt(0).toUpperCase() + name.slice(1);
+            formatted_name = formatted_name.replaceAll("_", " ");
+            identifier.innerHTML = formatted_name;
         }
         identifier.id = name+"i";
         number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
@@ -299,7 +342,7 @@ function drawHeatmap(){
     // console.log("Max:\t"+max+"\nMin:\t"+min);
 
     // Use the lookup in the Leaflet layer
-    console.log(" drawing map layer...");
+    // console.log(" drawing map layer...");
     mapLayer = L.geoJson(geoJSON, {
         style: function(feature) {
             // Pull the income from our lookup table using the GeoJSON ID
@@ -310,8 +353,8 @@ function drawHeatmap(){
                 statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
             }
             return {
-                fillColor: getHueGradient(statistic, min, max, gradient_hue),
-                weight: 1,
+                fillColor: getMultiColorGradient(statistic, min, max, left_color, middle_color, right_color),
+                weight: 0,
                 fillOpacity: 0.7,
                 color: 'white'
             };
@@ -319,25 +362,24 @@ function drawHeatmap(){
         onEachFeature: function(feature, layer) {
             const CUSEC = feature.properties.CUSEC;
 
-            // Check if the feature has properties and a specific field (e.g., 'name')
-            // if (feature.properties && feature.properties.name) {
+            // Popup appears on click by default
             layer.bindPopup(CUSEC, {
                 closeButton: false, 
                 offset: L.point(0, -10) // Prevents popup from flickering under the cursor
             });
-            // ^ appears on click by default
             
             layer.on('click', function(e) {
                 // unhighlight all other popups
                 mapLayer.eachLayer(function(l) {
                     if(l != layer){
-                        l.setStyle({ weight: 1, color: 'white', dashArray: '', fillOpacity: 0.7 });
+                        // clear borders
+                        l.setStyle({ weight: 0});
                     }
                 });
 
                 // highlight the selected neighborhood
                 // var layer = e.target;
-                layer.setStyle({ weight: 5, color: '#666', dashArray: '', fillOpacity: 0.7 });
+                layer.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: 0.7 });
                 layer.bringToFront(); // Ensures the border highlight is visible above other layers
 
                 // update the Statistics Sidebar
@@ -363,41 +405,36 @@ function drawHeatmap(){
 
                 // show the selected popup
                 layer.openPopup();
-                // TODO: get the display name of the tables and stats to show in the popup instead of just the raw data name, which is not very user friendly
-                const display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
                 
-                layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
-                    closeButton: false, 
-                    offset: L.point(0, -10) // Prevents popup from flickering under the cursor
-                });
+                // check if a dataset has been selected, if not just show the CUSEC?
+                if(selected_data){
+                    let display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
+                    // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
+                    display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
+                    
+                    layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
+                        closeButton: false, 
+                        offset: L.point(0, -10) // Prevents popup from flickering under the cursor
+                    });
+                }
 
                 // unhighlight all other popups except the currently selected one
                 mapLayer.eachLayer(function(l) {
                     if(l.feature.properties.CUSEC == selected_CUSEC){
                         console.log(selected_CUSEC + "is the selected CUSEC");
+                        l.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: gradient_opacity });
                     }
                     if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
-                        l.setStyle({ weight: 1, color: 'white', dashArray: '', fillOpacity: 0.7 });
+                        // clear borders
+                        l.setStyle({ weight: 0 });
                     }
                 });
 
                 // light highlight the selected neighborhood
-                // var layer = e.target;
-                layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: 0.7 });
+                layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: gradient_opacity });
                 layer.bringToFront(); // Ensures the border highlight is visible above other layers
             });
 
-            // layer.on('mouseout', function(e){
-            //     // unhighlight the neighborhood when the mouse leaves, but only if it is not the currently selected neighborhood
-            //     if(selected_CUSEC == CUSEC){
-            //         return
-            //     }
-            //     var layer = e.target;
-            //     layer.setStyle({ weight: 1, color: 'white', dashArray: '', fillOpacity: 0.7 });
-            //     layer.bringToFront(); // Ensures the border highlight is visible above other layers
-                
-            //     layer.closePopup();
-            // });
         }
     }).addTo(map);
 
@@ -405,8 +442,8 @@ function drawHeatmap(){
     const left_box = document.getElementById("L");
     const right_box = document.getElementById("R");
 
-    left_box.style = "background-color: " + getHueGradient(min, min, max, gradient_hue);
-    right_box.style = "background-color: " + getHueGradient(max, min, max, gradient_hue);
+    left_box.style = "background-color: " + left_color + "; opacity: " + gradient_opacity;
+    right_box.style = "background-color: " + right_color + "; opacity: " + gradient_opacity;
 
     const left_label = document.getElementById("left-label");
     const right_label = document.getElementById("right-label");
