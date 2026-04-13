@@ -1,10 +1,14 @@
 import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
 
 // Style Constants
-
 const highlight_color = "#c9ffc9";
 const gradient_hue = 200;
 const hover_color = "#66ff66";
+const selected_color = '#000000';
+const left_color =  "#2a7b9b";
+const middle_color = "#FFFFFF";
+const right_color = "#FF0000";
+const gradient_opacity = .7;
 
 
 // Get language from URL
@@ -42,7 +46,6 @@ var map = L.map('map', {
 // console.log(location.hostname);
 if (location.hostname === "127.0.0.1") {
     // console.log("connecting to emulator...")
-    // 8080 is the default Firestore emulator port
     connectFirestoreEmulator(db, 'localhost', 8888);
 }
 
@@ -98,10 +101,22 @@ function getMultiColorGradient(value, min, max, color1, color2, color3) {
         }
     }
 
+    // 2.5 Parse strings for fading
+    const start_rgb = {
+        r: parseInt(start.slice(1, 3), 16),
+        g: parseInt(start.slice(3, 5), 16),
+        b: parseInt(start.slice(5, 7), 16),
+    };
+    const end_rgb = {
+        r: parseInt(end.slice(1, 3), 16),
+        g: parseInt(end.slice(3, 5), 16),
+        b: parseInt(end.slice(5, 7), 16),
+    };
+
     // 3. Interpolate the R, G, and B values
-    const r = Math.round(start.r + (end.r - start.r) * fade);
-    const g = Math.round(start.g + (end.g - start.g) * fade);
-    const b = Math.round(start.b + (end.b - start.b) * fade);
+    const r = Math.round(start_rgb.r + (end_rgb.r - start_rgb.r) * fade);
+    const g = Math.round(start_rgb.g + (end_rgb.g - start_rgb.g) * fade);
+    const b = Math.round(start_rgb.b + (end_rgb.b - start_rgb.b) * fade);
 
     return `rgb(${r}, ${g}, ${b})`;
 }
@@ -338,8 +353,8 @@ function drawHeatmap(){
                 statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
             }
             return {
-                fillColor: getHueGradient(statistic, min, max, gradient_hue),
-                weight: 1,
+                fillColor: getMultiColorGradient(statistic, min, max, left_color, middle_color, right_color),
+                weight: 0,
                 fillOpacity: 0.7,
                 color: 'white'
             };
@@ -359,13 +374,13 @@ function drawHeatmap(){
                 // unhighlight all other popups
                 mapLayer.eachLayer(function(l) {
                     if(l != layer){
-                        l.setStyle({ weight: 1, color: 'white', dashArray: '', fillOpacity: 0.7 });
+                        l.setStyle({ weight: 0, color: 'white', dashArray: '', fillOpacity: 0.7 });
                     }
                 });
 
                 // highlight the selected neighborhood
                 // var layer = e.target;
-                layer.setStyle({ weight: 5, color: '#666', dashArray: '', fillOpacity: 0.7 });
+                layer.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: 0.7 });
                 layer.bringToFront(); // Ensures the border highlight is visible above other layers
 
                 // update the Statistics Sidebar
@@ -410,15 +425,16 @@ function drawHeatmap(){
                 mapLayer.eachLayer(function(l) {
                     if(l.feature.properties.CUSEC == selected_CUSEC){
                         console.log(selected_CUSEC + "is the selected CUSEC");
+                        l.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: gradient_opacity });
                     }
                     if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
-                        l.setStyle({ weight: 1, color: 'white', dashArray: '', fillOpacity: 0.7 });
+                        l.setStyle({ weight: 0, color: 'white', dashArray: '', fillOpacity: gradient_opacity });
                     }
                 });
 
                 // light highlight the selected neighborhood
                 // var layer = e.target;
-                layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: 0.7 });
+                layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: gradient_opacity });
                 layer.bringToFront(); // Ensures the border highlight is visible above other layers
             });
 
@@ -440,8 +456,8 @@ function drawHeatmap(){
     const left_box = document.getElementById("L");
     const right_box = document.getElementById("R");
 
-    left_box.style = "background-color: " + getHueGradient(min, min, max, gradient_hue);
-    right_box.style = "background-color: " + getHueGradient(max, min, max, gradient_hue);
+    left_box.style = "background-color: " + left_color + "; opacity: " + gradient_opacity;
+    right_box.style = "background-color: " + right_color + "; opacity: " + gradient_opacity;
 
     const left_label = document.getElementById("left-label");
     const right_label = document.getElementById("right-label");
