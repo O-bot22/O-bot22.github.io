@@ -362,19 +362,18 @@ function drawHeatmap(){
         onEachFeature: function(feature, layer) {
             const CUSEC = feature.properties.CUSEC;
 
-            // Check if the feature has properties and a specific field (e.g., 'name')
-            // if (feature.properties && feature.properties.name) {
+            // Popup appears on click by default
             layer.bindPopup(CUSEC, {
                 closeButton: false, 
                 offset: L.point(0, -10) // Prevents popup from flickering under the cursor
             });
-            // ^ appears on click by default
             
             layer.on('click', function(e) {
                 // unhighlight all other popups
                 mapLayer.eachLayer(function(l) {
                     if(l != layer){
-                        l.setStyle({ weight: 0, color: 'white', dashArray: '', fillOpacity: 0.7 });
+                        // clear borders
+                        l.setStyle({ weight: 0});
                     }
                 });
 
@@ -406,20 +405,18 @@ function drawHeatmap(){
 
                 // show the selected popup
                 layer.openPopup();
-                // TODO: get the display name of the tables and stats to show in the popup instead of just the raw data name, which is not very user friendly
-                // check if a dataset has been selected, if not just show the CUSEC
-                if(! selected_data){
-                    return
-                }
-
-                let display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
-                // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
-                display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
                 
-                layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
-                    closeButton: false, 
-                    offset: L.point(0, -10) // Prevents popup from flickering under the cursor
-                });
+                // check if a dataset has been selected, if not just show the CUSEC?
+                if(selected_data){
+                    let display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
+                    // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
+                    display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
+                    
+                    layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
+                        closeButton: false, 
+                        offset: L.point(0, -10) // Prevents popup from flickering under the cursor
+                    });
+                }
 
                 // unhighlight all other popups except the currently selected one
                 mapLayer.eachLayer(function(l) {
@@ -428,27 +425,16 @@ function drawHeatmap(){
                         l.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: gradient_opacity });
                     }
                     if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
-                        l.setStyle({ weight: 0, color: 'white', dashArray: '', fillOpacity: gradient_opacity });
+                        // clear borders
+                        l.setStyle({ weight: 0 });
                     }
                 });
 
                 // light highlight the selected neighborhood
-                // var layer = e.target;
                 layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: gradient_opacity });
                 layer.bringToFront(); // Ensures the border highlight is visible above other layers
             });
 
-            // layer.on('mouseout', function(e){
-            //     // unhighlight the neighborhood when the mouse leaves, but only if it is not the currently selected neighborhood
-            //     if(selected_CUSEC == CUSEC){
-            //         return
-            //     }
-            //     var layer = e.target;
-            //     layer.setStyle({ weight: 1, color: 'white', dashArray: '', fillOpacity: 0.7 });
-            //     layer.bringToFront(); // Ensures the border highlight is visible above other layers
-                
-            //     layer.closePopup();
-            // });
         }
     }).addTo(map);
 
