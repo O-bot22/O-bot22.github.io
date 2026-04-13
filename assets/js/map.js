@@ -122,7 +122,6 @@ function updateDocLookup(){
 }
 
 function formatData(number, dataset_name){
-    // TODO: fill this out
     let pre = "";
     let post = "";
     try{
@@ -132,8 +131,32 @@ function formatData(number, dataset_name){
             // TODO: for long numbers add in commas
         }else if(dataset_name.includes("Porcentaje")){
             post = "%";
-        }else if(dataset_name.includes("poblacion")){
+        }else if(dataset_name.includes("poblacion") && dataset_name != "poblacion_16_y_mas_total"){ // needs to exclude the total population over 16, which is just a number that needs commas, not a percentage
+            // needs to exclude the populations under ecenomic activity, which are just number of people
+            if(selected_table != "tabla_66687"){
+                post = "%";
+            }
+        }else if(dataset_name == "tasa_paro_hombres" || dataset_name == "tasa_paro_mujeres" || dataset_name == "tasa_empleo_mujeres" || dataset_name == "tasa_empleo_hombres" || dataset_name == "tasa_empleo_total" || dataset_name == "tasa_paro_total"){
+            number = (number*100).toFixed(2);
             post = "%";
+        }else if(dataset_name.includes("tasa")){
+            console.log("found tasa: "+dataset_name);
+        }else if(selected_table == "tabla_30944"){
+            pre = "€";
+            // add commas
+            number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }else if(number > 1000){
+            // add commas
+            number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        // once all other formatting is done, switch the decimal point to a comma if in spanish and the comma to a decimal point, since that is the standard formatting in spanish, but not if in english, since that is the standard formatting in english
+        if(lang == "es"){
+            // change to a temp character to mark decimal points
+            number = number.toString().replaceAll(".", "@");
+            // change commas to decimal points
+            number = number.toString().replaceAll(",", ".");
+            // change temp character to commas
+            number = number.toString().replaceAll("@", ",");
         }
     } catch (e){
         console.log(dataset_name);
@@ -204,6 +227,8 @@ function newDatasetSelectedCallback(e){
 
     highlightRow(e.target.id);
 
+    console.log("clicked on dataset: "+e.target.id);
+
     // redraw the map
     drawHeatmap();
     // TODO: make sure when the heatmap is redrawn, the same neighborhood is still highlighted
@@ -238,7 +263,10 @@ function generate_selected_table(){
         if(translated_name){
             identifier.innerHTML = translated_name;
         }else{
-            identifier.innerHTML = name.replaceAll("_", " ");
+            // if no translation is found, just print the raw name with underscores replaced with spaces, which is more readable at least and capitalize the first letter of the first word
+            let formatted_name = name.charAt(0).toUpperCase() + name.slice(1);
+            formatted_name = formatted_name.replaceAll("_", " ");
+            identifier.innerHTML = formatted_name;
         }
         identifier.id = name+"i";
         number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
@@ -299,7 +327,7 @@ function drawHeatmap(){
     // console.log("Max:\t"+max+"\nMin:\t"+min);
 
     // Use the lookup in the Leaflet layer
-    console.log(" drawing map layer...");
+    // console.log(" drawing map layer...");
     mapLayer = L.geoJson(geoJSON, {
         style: function(feature) {
             // Pull the income from our lookup table using the GeoJSON ID
@@ -364,7 +392,14 @@ function drawHeatmap(){
                 // show the selected popup
                 layer.openPopup();
                 // TODO: get the display name of the tables and stats to show in the popup instead of just the raw data name, which is not very user friendly
-                const display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
+                // check if a dataset has been selected, if not just show the CUSEC
+                if(! selected_data){
+                    return
+                }
+
+                let display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
+                // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
+                display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
                 
                 layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
                     closeButton: false, 
