@@ -296,7 +296,12 @@ function generate_selected_table(){
         if(aggregated){
             number.innerHTML = formatData(averages[selected_table][name], name);
         }else{
-            number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
+            try{
+                number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
+            }catch(e){
+                console.log(selected_CUSEC);
+                console.log(e);
+            }
         }
         number.id = name+"#";
 
@@ -337,6 +342,89 @@ function clearHighlights(topLayer){
         }
     });
 }
+// used to generate the style for each GeoJSON polygon that is added to the heatmap
+function stylePolygon(feature, min, max) {
+    // Pull the income from our lookup table using the GeoJSON ID
+    // check that a dataset has been selected already
+    let statistic;
+    if(selected_data){
+        // pull the selected statistic for that CUSEC to be used for color generation
+        statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
+    }
+
+    // fill with a standard color when showing aggregate data
+    let f = 0;
+    if(aggregated){
+        f = right_color;
+    }else{
+        f = getMultiColorGradient(statistic, min, max, left_color, middle_color, right_color);
+    } 
+    return {
+        fillColor: f,
+        weight: 0,
+        fillOpacity: 0.7,
+        color: 'white'
+    };
+}
+function onZoneSelected(layer, CUSEC){
+    // unhighlight all other popups
+    clearHighlights(layer);
+
+    // highlight the selected neighborhood
+    layer.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: 0.7 });
+    layer.bringToFront(); // Ensures the border highlight is visible above other layers
+
+    // update the Statistics Sidebar
+    // CUSEC number
+    const cusec_element = document.getElementById("CUSEC");
+    if(aggregated){
+        cusec_element.innerHTML = "---";
+    }else{                
+        cusec_element.innerHTML = CUSEC;
+    }
+    selected_CUSEC = CUSEC;
+
+    // generate table row for each stat
+    generate_selected_table(); // <- this breaks the first time a zone is selected
+
+    // keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
+    highlightRow();
+};
+function onZoneMouseover(layer, CUSEC) {
+    // close all other popups
+    clearPopups(layer);
+
+    // show the selected popup
+    layer.openPopup();
+    
+    // check if a dataset has been selected, if not just show the CUSEC?
+    if(selected_data){
+        let display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
+        // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
+        display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
+        
+        layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
+            closeButton: false, 
+            offset: L.point(0, -10) // Prevents popup from flickering under the cursor
+        });
+    }
+
+    // unhighlight all other popups except the currently selected one
+    mapLayer.eachLayer(function(l) {
+        if(l.feature.properties.CUSEC == selected_CUSEC){
+            console.log(selected_CUSEC + "is the selected CUSEC");
+            l.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: gradient_opacity });
+        }
+        if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
+            // clear borders
+            l.setStyle({ weight: 0 });
+        }
+    });
+
+    // light highlight the selected neighborhood
+    layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: gradient_opacity });
+    layer.bringToFront(); // Ensures the border highlight is visible above other layers
+}
 
 function drawHeatmap(){
     // if aggregated is true, draw all of Puerto Real as a connected region
@@ -346,9 +434,7 @@ function drawHeatmap(){
     updateDocLookup();
 
     // remove the layer from the map so that it can be re added
-    if(! mapLayer){
-        // console.log("no map layer has been made yet");
-    }else{
+    if(mapLayer){
         mapLayer.remove();
     }
 
@@ -375,29 +461,7 @@ function drawHeatmap(){
     // Use the lookup in the Leaflet layer
     // console.log(" drawing map layer...");
     mapLayer = L.geoJson(geoJSON, {
-        style: function(feature) {
-            // Pull the income from our lookup table using the GeoJSON ID
-            // check that a dataset has been selected already
-            let statistic;
-            if(selected_data){
-                // pull the selected statistic for that CUSEC to be used for color generation
-                statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
-            }
-
-            // fill with a standard color when showing aggregate data
-            let f = 0;
-            if(aggregated){
-                f = right_color;
-            }else{
-                f = getMultiColorGradient(statistic, min, max, left_color, middle_color, right_color);
-            } 
-            return {
-                fillColor: f,
-                weight: 0,
-                fillOpacity: 0.7,
-                color: 'white'
-            };
-        },
+        style: feature => stylePolygon(feature, min, max),
         onEachFeature: function(feature, layer) {
             const CUSEC = feature.properties.CUSEC;
 
@@ -412,66 +476,9 @@ function drawHeatmap(){
                 return
             }
 
-            layer.on('click', function(e) {
-                // unhighlight all other popups
-                clearHighlights(layer);
+            layer.on('click', (e) => {onZoneSelected(layer, CUSEC)});
 
-                // highlight the selected neighborhood
-                layer.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: 0.7 });
-                layer.bringToFront(); // Ensures the border highlight is visible above other layers
-
-                // update the Statistics Sidebar
-                // CUSEC number
-                const cusec_element = document.getElementById("CUSEC");
-                if(aggregated){
-                    cusec_element.innerHTML = "---";
-                }else{                
-                    cusec_element.innerHTML = CUSEC;
-                }
-                selected_CUSEC = CUSEC;
-
-                // generate table row for each stat
-                generate_selected_table();
-
-                // keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
-                highlightRow();
-            });
-
-            layer.on('mouseover', function(e) {
-                // close all other popups
-                clearPopups(layer);
-
-                // show the selected popup
-                layer.openPopup();
-                
-                // check if a dataset has been selected, if not just show the CUSEC?
-                if(selected_data){
-                    let display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
-                    // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
-                    display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
-                    
-                    layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
-                        closeButton: false, 
-                        offset: L.point(0, -10) // Prevents popup from flickering under the cursor
-                    });
-                }
-
-                // unhighlight all other popups except the currently selected one
-                mapLayer.eachLayer(function(l) {
-                    if(l.feature.properties.CUSEC == selected_CUSEC){
-                        console.log(selected_CUSEC + "is the selected CUSEC");
-                        l.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: gradient_opacity });
-                    }
-                    if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
-                        // clear borders
-                        l.setStyle({ weight: 0 });
-                    }
-                });
-
-                // light highlight the selected neighborhood
-                layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: gradient_opacity });
-                layer.bringToFront(); // Ensures the border highlight is visible above other layers
-            });
+            layer.on('mouseover', (e) => {onZoneMouseover(layer, CUSEC)});
 
         }
     }).addTo(map);
@@ -599,6 +606,7 @@ toggle_switch.addEventListener("change", (e) => {
         cusec_element.innerHTML = selected_CUSEC;
         generate_selected_table();
     }
+    // TODO: can I use onZoneSelected here?
 })
 
 
