@@ -1,3 +1,12 @@
+/**
+ * TODO:
+ * have links point to the correct language
+ * add data from Amanda (district level ideally)
+ * add polygon for whole city
+ * aggregate IME data for whole city to display with whole city polygon
+ */
+
+
 import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
 
 // Style Constants
