@@ -1,3 +1,10 @@
+/**
+ * TODO:
+ * add data from Amanda (district level ideally)
+ * add polygon for whole city
+ */
+
+
 import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
 
 // Style Constants
@@ -127,9 +134,11 @@ let old_table = "";
 let selected_CUSEC = null;
 let selected_data;
 let snapshot;
+let aggregated = false;
 
 
-const dataLookup = {};
+const dataLookup = {};  // to store firebase data
+const averages = {};    // to store aggregated data
 function updateDocLookup(){
     snapshot.forEach(doc => {
         dataLookup[doc.id] = doc.data();
@@ -251,7 +260,7 @@ function newDatasetSelectedCallback(e){
 
 function generate_selected_table(){
     // check that a neighborhood has been selected
-    if(! selected_CUSEC){
+    if(! selected_CUSEC && ! aggregated){
         console.log("please select a neighborhood");
         return
     }
@@ -284,7 +293,16 @@ function generate_selected_table(){
             identifier.innerHTML = formatted_name;
         }
         identifier.id = name+"i";
-        number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
+        if(aggregated){
+            number.innerHTML = formatData(averages[selected_table][name], name);
+        }else{
+            try{
+                number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
+            }catch(e){
+                console.log(selected_CUSEC);
+                console.log(e);
+            }
+        }
         number.id = name+"#";
 
         // add event listener so that each box can update the map
@@ -309,15 +327,114 @@ function generate_selected_table(){
 let mapLayer;
 let geoJSON;
 
+function clearPopups(topLayer){
+    mapLayer.eachLayer(function(l) {
+        if(l != topLayer){
+            l.closePopup();
+        }
+    });
+}
+function clearHighlights(topLayer){
+    mapLayer.eachLayer(function(l) {
+        if(l != topLayer){
+            // clear borders
+            l.setStyle({ weight: 0});
+        }
+    });
+}
+// used to generate the style for each GeoJSON polygon that is added to the heatmap
+function stylePolygon(feature, min, max) {
+    // Pull the income from our lookup table using the GeoJSON ID
+    // check that a dataset has been selected already
+    let statistic;
+    if(selected_data){
+        // pull the selected statistic for that CUSEC to be used for color generation
+        statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
+    }
+
+    // fill with a standard color when showing aggregate data
+    let f = 0;
+    if(aggregated){
+        f = right_color;
+    }else{
+        f = getMultiColorGradient(statistic, min, max, left_color, middle_color, right_color);
+    } 
+    return {
+        fillColor: f,
+        weight: 0,
+        fillOpacity: 0.7,
+        color: 'white'
+    };
+}
+function onZoneSelected(layer, CUSEC){
+    // unhighlight all other popups
+    clearHighlights(layer);
+
+    // highlight the selected neighborhood
+    layer.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: 0.7 });
+    layer.bringToFront(); // Ensures the border highlight is visible above other layers
+
+    // update the Statistics Sidebar
+    // CUSEC number
+    const cusec_element = document.getElementById("CUSEC");
+    if(aggregated){
+        cusec_element.innerHTML = "---";
+    }else{                
+        cusec_element.innerHTML = CUSEC;
+    }
+    selected_CUSEC = CUSEC;
+
+    // generate table row for each stat
+    generate_selected_table(); // <- this breaks the first time a zone is selected
+
+    // keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
+    highlightRow();
+};
+function onZoneMouseover(layer, CUSEC) {
+    // close all other popups
+    clearPopups(layer);
+
+    // show the selected popup
+    layer.openPopup();
+    
+    // check if a dataset has been selected, if not just show the CUSEC?
+    if(selected_data){
+        let display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
+        // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
+        display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
+        
+        layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
+            closeButton: false, 
+            offset: L.point(0, -10) // Prevents popup from flickering under the cursor
+        });
+    }
+
+    // unhighlight all other popups except the currently selected one
+    mapLayer.eachLayer(function(l) {
+        if(l.feature.properties.CUSEC == selected_CUSEC){
+            console.log(selected_CUSEC + "is the selected CUSEC");
+            l.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: gradient_opacity });
+        }
+        if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
+            // clear borders
+            l.setStyle({ weight: 0 });
+        }
+    });
+
+    // light highlight the selected neighborhood
+    layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: gradient_opacity });
+    layer.bringToFront(); // Ensures the border highlight is visible above other layers
+}
+
 function drawHeatmap(){
+    // if aggregated is true, draw all of Puerto Real as a connected region
+
     // Create the lookup object
     // call an update function so that it can be used globally
     updateDocLookup();
 
     // remove the layer from the map so that it can be re added
-    if(! mapLayer){
-        // console.log("no map layer has been made yet");
-    }else{
+    if(mapLayer){
         mapLayer.remove();
     }
 
@@ -344,21 +461,7 @@ function drawHeatmap(){
     // Use the lookup in the Leaflet layer
     // console.log(" drawing map layer...");
     mapLayer = L.geoJson(geoJSON, {
-        style: function(feature) {
-            // Pull the income from our lookup table using the GeoJSON ID
-            // check that a dataset has been selected already
-            let statistic;
-            if(selected_data){
-                // pull the selected statistic for that CUSEC to be used for color generation
-                statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
-            }
-            return {
-                fillColor: getMultiColorGradient(statistic, min, max, left_color, middle_color, right_color),
-                weight: 0,
-                fillOpacity: 0.7,
-                color: 'white'
-            };
-        },
+        style: feature => stylePolygon(feature, min, max),
         onEachFeature: function(feature, layer) {
             const CUSEC = feature.properties.CUSEC;
 
@@ -368,72 +471,14 @@ function drawHeatmap(){
                 offset: L.point(0, -10) // Prevents popup from flickering under the cursor
             });
             
-            layer.on('click', function(e) {
-                // unhighlight all other popups
-                mapLayer.eachLayer(function(l) {
-                    if(l != layer){
-                        // clear borders
-                        l.setStyle({ weight: 0});
-                    }
-                });
+            // make the polygon static if the aggregate data is being displayed
+            if(aggregated){
+                return
+            }
 
-                // highlight the selected neighborhood
-                // var layer = e.target;
-                layer.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: 0.7 });
-                layer.bringToFront(); // Ensures the border highlight is visible above other layers
+            layer.on('click', (e) => {onZoneSelected(layer, CUSEC)});
 
-                // update the Statistics Sidebar
-                // CUSEC number
-                const cusec_element = document.getElementById("CUSEC");
-                cusec_element.innerHTML = CUSEC;
-                selected_CUSEC = CUSEC;
-
-                // generate table row for each stat
-                generate_selected_table();
-
-                // keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
-                highlightRow();
-            });
-
-            layer.on('mouseover', function(e) {
-                // close all other popups
-                mapLayer.eachLayer(function(l) {
-                    if(l != layer){
-                        l.closePopup();
-                    }
-                });
-
-                // show the selected popup
-                layer.openPopup();
-                
-                // check if a dataset has been selected, if not just show the CUSEC?
-                if(selected_data){
-                    let display_name = dataset_translations[selected_data.replaceAll("_", " ")] || selected_data.replaceAll("_", " ");
-                    // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
-                    display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
-                    
-                    layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
-                        closeButton: false, 
-                        offset: L.point(0, -10) // Prevents popup from flickering under the cursor
-                    });
-                }
-
-                // unhighlight all other popups except the currently selected one
-                mapLayer.eachLayer(function(l) {
-                    if(l.feature.properties.CUSEC == selected_CUSEC){
-                        console.log(selected_CUSEC + "is the selected CUSEC");
-                        l.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: gradient_opacity });
-                    }
-                    if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
-                        // clear borders
-                        l.setStyle({ weight: 0 });
-                    }
-                });
-
-                // light highlight the selected neighborhood
-                layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: gradient_opacity });
-                layer.bringToFront(); // Ensures the border highlight is visible above other layers
-            });
+            layer.on('mouseover', (e) => {onZoneMouseover(layer, CUSEC)});
 
         }
     }).addTo(map);
@@ -509,6 +554,33 @@ async function fetchMyData() {
         drawHeatmap();
     });
 
+    // calculate average data
+    // TODO: use weighted average instead
+    const docs = snapshot.docs;
+    // look in each document for each statistic for each table
+    table_names.forEach((table_name) => {
+        // console.log(table_name);
+        const stat_names = Object.keys(docs[0].data()["datasets"][table_name]);
+        // console.log(stat_names);
+        averages[table_name] = {};
+        stat_names.forEach(stat_name => {
+            // console.log(stat_name);
+            averages[table_name][stat_name] = 0;
+            docs.forEach(doc => {
+                try{
+                    averages[table_name][stat_name] += doc.data()["datasets"][table_name][stat_name];
+                    // console.log(doc.data()["datasets"][table_name][stat_name]);
+                } catch (error){
+                    // console.log("doc at the end");
+                }
+            });
+            const l = docs.length - 2;
+            // console.log(l); // should be number of zones
+            averages[table_name][stat_name] = (averages[table_name][stat_name]/l).toFixed(2);
+        });
+    });
+    console.log(averages);
+
   } catch (error) {
     console.error("Error pulling Firestore data:", error);
   }
@@ -516,6 +588,27 @@ async function fetchMyData() {
 
 // Run it!
 fetchMyData();
+
+const toggle_switch = document.getElementById("toggle");
+toggle_switch.addEventListener("change", (e) => {
+    aggregated = e.target.checked;
+    const cusec_element = document.getElementById("CUSEC");
+    if(aggregated){
+        // switch to view of aggregated data for the whole city
+        drawHeatmap();
+        
+        cusec_element.innerHTML = "---";
+        generate_selected_table();
+    }else{
+        // reset to display section-specific data
+        drawHeatmap();
+
+        cusec_element.innerHTML = selected_CUSEC;
+        generate_selected_table();
+    }
+    // TODO: can I use onZoneSelected here?
+})
+
 
 // Fill in page for the selected language
 changeLanguage(lang);

@@ -6,5 +6,8 @@
     "statistics-header": "Statistics",
     "initial-row": "Please select a neighborhood to get started...",
     "minimum-label": "Min",
-    "maximum-label": "Max"
+    "maximum-label": "Max",
+
+    "Section View": "Section View",
+    "City View": "City View"
 }

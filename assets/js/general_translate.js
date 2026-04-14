@@ -11,6 +11,14 @@ const lang = params.get("lang") || "en";
 
 const base_url = location.origin + location.pathname;
 
+// change all links on the page to point to the correct language
+if(lang != "en"){
+    const link_elements = document.getElementsByTagName("a");
+    Array.from(link_elements).forEach(elem => {
+        elem.href = elem.href + "?lang=" + lang;
+    })
+}
+
 if(lang == "en"){
     lang_button.innerHTML = "Español";
     lang_button.href = base_url + "?lang=es";
