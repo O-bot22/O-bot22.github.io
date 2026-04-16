@@ -1,22 +1,21 @@
 ---
 layout: tag
 taxonomy: outreach
-title: "Local Outreach"
-permalink: /local-outreach/
+title: "Project Overview"
+permalink: /project/
 classes: wide
 sidebar: true
 author_profile: true
 ---
 
-<!-- Leaflet CSS and JS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Site map page to branch off to posts of each activity we did -->
 
 <div>
     {% for post in site.documents %}
         {% capture year %}{{ post.date | date: '%Y' }}{% endcapture %}
         {% if year != written_year %}
             <h2 id="{{ year | slugify }}" class="archive__subtitle">{{ year }}</h2>
+            <!-- ^ could sort by weeks to represent the weeks we did each thing when we were here maybe? -->
             {% capture written_year %}{{ year }}{% endcapture %}
         {% endif %}
         {% include archive-single.html %}

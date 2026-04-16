@@ -2,6 +2,9 @@
  * TODO:
  * add data from Amanda (district level ideally)
  * add polygon for whole city
+ * add sources on the site so readers can find out citations
+ * possibly refactor into multiple js files for maintainability
+ * add support for multiple amanda tables
  */
 
 
@@ -132,9 +135,14 @@ function getMultiColorGradient(value, min, max, color1, color2, color3) {
 let selected_table = "";
 let old_table = "";
 let selected_CUSEC = null;
-let selected_data;
-let snapshot;
+let selected_data = null;
 let aggregated = false;
+
+let snapshot;
+let table_names;
+let amanda_snapshot;
+const amanda_label = "Demographics of Beneficiaries";
+let amandaLookup = {};
 
 
 const dataLookup = {};  // to store firebase data
@@ -259,6 +267,8 @@ function newDatasetSelectedCallback(e){
 }
 
 function generate_selected_table(){
+    // TODO: if showing aggregated data, then add it so it can be shown, no matter what CUSEC is selected
+
     // check that a neighborhood has been selected
     if(! selected_CUSEC && ! aggregated){
         console.log("please select a neighborhood");
@@ -270,7 +280,13 @@ function generate_selected_table(){
     row_container.innerHTML = "";
 
     // pull new names
-    const dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_table]); // can be pulled from any neighborhood as long as we have data for them all
+    let dataset_names;
+    console.log(selected_table);
+    if(aggregated && selected_table == amanda_label){
+        dataset_names = Object.keys(amanda_snapshot.docs[0].data());
+    }else{
+        dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_table]); // can be pulled from any neighborhood as long as we have data for them all
+    }
     // TODO: add failsafe for when we do not have data for a specific neighborhood
     
     // generate a row for each name
@@ -294,7 +310,12 @@ function generate_selected_table(){
         }
         identifier.id = name+"i";
         if(aggregated){
-            number.innerHTML = formatData(averages[selected_table][name], name);
+            if(selected_table == amanda_label){
+                console.log(amanda_snapshot.docs[0].data()[name]);
+                number.innerHTML = formatData(amanda_snapshot.docs[0].data()[name], name);
+            }else{
+                number.innerHTML = formatData(averages[selected_table][name], name);
+            }
         }else{
             try{
                 number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
@@ -349,7 +370,12 @@ function stylePolygon(feature, min, max) {
     let statistic;
     if(selected_data){
         // pull the selected statistic for that CUSEC to be used for color generation
-        statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
+        // HACK: needs to be diff for amanda data
+        if(selected_table == amanda_label){
+            statistic = amandaLookup[selected_data];
+        }else{
+            statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
+        }
     }
 
     // fill with a standard color when showing aggregate data
@@ -442,11 +468,18 @@ function drawHeatmap(){
     // store each value in an array for processing at the end
     const stat_dump = [];
     Object.entries(dataLookup).forEach(data => {
+        // filter out metadata
         if(data[0] == "_query" || data[0] == "_readTime"){
             return
         }
+
         try {
-            stat_dump.push(data[1]["datasets"][selected_table][selected_data]);
+            // HACK: should maybe make a selected collection level to avoid this. Especially since the amanda data does not have a min or max rn
+            if(selected_table == amanda_label){
+                stat_dump.push(amanda_snapshot.docs[0].data()[selected_data]);
+            }else{
+                stat_dump.push(data[1]["datasets"][selected_table][selected_data]);
+            }
         } catch (error){ 
             console.log("CUSEC: "+data[0]);
             console.error("Error pulling neighborhood data:", error);
@@ -502,7 +535,28 @@ function drawHeatmap(){
     }
 }
 
-async function fetchMyData() {
+function generateDropdownOptions(){
+    const dropdown = document.getElementById("statistics");
+
+    // clear old options (if there are any)
+    dropdown.innerHTML = "";
+
+    table_names.forEach((name) => {
+        var dropdown_element = document.createElement("option");
+        if(table_name_lookup[name]){
+            dropdown_element.innerHTML = table_name_lookup[name]; // print a human readable tablename
+        }else{
+            dropdown_element.innerHTML = name;
+        }
+        dropdown_element.value = name;
+        dropdown.appendChild(dropdown_element);
+    });
+
+    // set the default table name so that the dataset names can be pulled
+    selected_table = table_names[0];
+}
+
+async function fetchZoneData() {
   try {
     // console.log("connecting to database...");
     const colRef = collection(db, "Zones");
@@ -521,28 +575,23 @@ async function fetchMyData() {
     // generate a dropdown to put all of the statistics
     const dropdown = document.getElementById("statistics");
     function update_tablename(e){
+        // this breaks because Owen decided to add data messily
+        // clean up manually maybe
+        // if(e.target.value == amanda_label){
+        //     selected_table = 
+        // }else{
         selected_table = e.target.value;
+        // }
         generate_selected_table();
     }
     dropdown.addEventListener("click", update_tablename);
-    
-    const table_names = Object.keys(snapshot.docs[0].data()["datasets"]); // can be pulled from any dataset, so the first is used
-    table_names.forEach((name) => {
-        var dropdown_element = document.createElement("option");
-        if(table_name_lookup[name]){
-            dropdown_element.innerHTML = table_name_lookup[name]; // print a human readable tablename
-        }else{
-            dropdown_element.innerHTML = name;
-        }
-        dropdown_element.value = name;
-        dropdown.appendChild(dropdown_element);
-    });
 
-    // set the default table name so that the dataset names can be pulled
-    selected_table = table_names[0];
+    // store table names from snapshot
+    table_names = Object.keys(snapshot.docs[0].data()["datasets"]); // can be pulled from any dataset, so the first is used
+
+    generateDropdownOptions();
 
     // now, we can pull the geojson map, and add all the properties from firebase to each of the zones
-
     fetch('https://raw.githubusercontent.com/O-bot22/O-bot22.github.io/refs/heads/from_scratch/assets/data/puerto_real_zones.geojson')
     .then(response => 
         response.json()
@@ -586,8 +635,28 @@ async function fetchMyData() {
   }
 }
 
+async function fetchAggregateData() {
+    try{
+        const colRef = collection(db, "Amanda");
+
+        // store the firebase response globally
+        amanda_snapshot = await getDocs(colRef);
+
+        if (amanda_snapshot.empty) {
+            console.log("No documents found.");
+            return;
+        }
+
+        amandaLookup = amanda_snapshot.docs[0].data();
+        console.log(amanda_snapshot.docs[0].data());
+    } catch (error) {
+        console.error("Error pulling Firestore data:", error);
+    }
+}
+
 // Run it!
-fetchMyData();
+fetchZoneData();
+fetchAggregateData();
 
 const toggle_switch = document.getElementById("toggle");
 toggle_switch.addEventListener("change", (e) => {
@@ -597,33 +666,20 @@ toggle_switch.addEventListener("change", (e) => {
         // switch to view of aggregated data for the whole city
         drawHeatmap();
         
+        table_names.push(amanda_label);
+        generateDropdownOptions();
+
         cusec_element.innerHTML = "---";
         generate_selected_table();
     }else{
         // reset to display section-specific data
         drawHeatmap();
+        
+        table_names.pop(amanda_label);
+        generateDropdownOptions();
 
         cusec_element.innerHTML = selected_CUSEC;
         generate_selected_table();
     }
     // TODO: can I use onZoneSelected here?
 })
-
-
-// Fill in page for the selected language
-changeLanguage(lang);
-
-async function changeLanguage(lang) {
-    // update the global translation variable
-    const res = await fetch(`/lang/${lang}.json`);
-    translations = await res.json();
-
-    let title_div = document.getElementById("page-title");
-    title_div.children[0].innerText = translations["Map Title"];
-    
-    // do this dynamically
-    let elems = document.getElementsByClassName("translatable");
-    Array.from(elems).forEach(elem => {
-        elem.innerHTML = translations[elem.id];
-    });
-}
