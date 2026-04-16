@@ -1,6 +1,12 @@
-<label id="dataset-label" class="translatable" for="statistics">Choose a dataset table:</label>
-<select name="statistics" id="statistics">
+<label id="collection-label" class="translatable" for="collection">Choose a dataset:</label>
+<select name="collection" id="collection">
+    <option value="Zones">Gov Data?</option>
+    <option value="Amanda">Previous Data?</option>
+    <option value="Aggregate">Our own data, aggregated</option>
 </select>
+
+<label id="dataset-label" class="translatable" for="statistics">Choose a table:</label>
+<select name="statistics" id="statistics"></select>
 
 <table>
     <tbody>
@@ -53,12 +59,12 @@
 </table>
 
 <!-- Toggle sections and city view -->
-<span>
+ <!-- This should be locked on for certain datasets, but toggleable for the government data -->
+<!-- <span>
     <span id="Section View" class="translatable">Section View</span>
     <label class="switch">
-        <input type="checkbox" id="toggle"> 
-        <!-- checked -->
+        <input type="checkbox" id="toggle">
         <span class="slider"></span>
     </label>
     <span id="City View" class="translatable">City View</span>
-</span>
+</span> -->
