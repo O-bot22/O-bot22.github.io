@@ -9,16 +9,8 @@
 
 
 import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
-
-// Style Constants
-const highlight_color = "#c9ffc9";
-const gradient_hue = 200;
-const hover_color = "#66ff66";
-const selected_color = '#000000';
-const left_color =  "#2a7b9b";
-const middle_color = "#FFFFFF";
-const right_color = "#FF0000";
-const gradient_opacity = .7;
+import { getHueGradient, getMultiColorGradient, highlight_color, hover_color, selected_color, left_color, middle_color, right_color, gradient_opacity } from './map-style.js';
+import { formatData } from './format.js';
 
 
 // Get language from URL
@@ -29,9 +21,9 @@ const lang = params.get("lang") || "en";
 // pull translation file and store globally
 const res = await fetch(`/lang/${lang}.json`);
 let translations = await res.json();
-// tablename translation file
-const tables_res = await fetch('/lang/datasets-'+lang+'.json');
-let dataset_translations = await tables_res.json();
+// documentname translation file
+const documents_res = await fetch('/lang/datasets-'+lang+'.json');
+let dataset_translations = await documents_res.json();
 
 
 // Load Background Map
@@ -62,84 +54,15 @@ if (location.hostname === "127.0.0.1") {
 // console.log("firebase imported!");
 
 
-/**
- * Generates an HSL color along a gradient of a specific hue.
- * @param {number} value - The input number.
- * @param {number} min - The minimum value of the range.
- * @param {number} max - The maximum value of the range.
- * @param {number} hue - The hue angle (0-360).
- * @returns {string} - A CSS HSL color string.
- */
-function getHueGradient(value, min, max, hue) {
-    // 1. Clamp the value to ensure it stays within the min/max bounds
-    // const clamped = Math.max(min, Math.min(max, value));
-    
-    // 2. Calculate the percentage (0 to 1) of the value within the range
-    const range = max - min;
-    const percentage = range === 0 ? 0 : (value - min) / range;
-    
-    // 3. Map the percentage to Lightness (e.g., 90% is light, 30% is dark)
-    // Adjust these numbers to change how "light" or "dark" the gradient gets
-    const lightness = 90 - (percentage * 60); 
-    
-    return `hsl(${hue}, 100%, ${lightness}%)`;
-}
-// could add multi color if needed
-/**
- * Maps a value to a color along a multi-stop gradient (RGB).
- */
-function getMultiColorGradient(value, min, max, color1, color2, color3) {
-    // 1. Normalize the value to a 0-1 scale
-    const clamped = Math.max(min, Math.min(max, value));
-    const range = max - min;
-    let fade = range === 0 ? 0 : (clamped - min) / range;
-
-    let start = color1;
-    let end = color2;
-
-    // 2. If we have 3 colors, decide which half of the range we are in
-    if (color3) {
-        fade = fade * 2; // Split into two 0-1 ranges
-        if (fade >= 1) {
-            fade -= 1;     // Second half (color2 to color3)
-            start = color2;
-            end = color3;
-        } else {
-            // First half (color1 to color2)
-            start = color1;
-            end = color2;
-        }
-    }
-
-    // 2.5 Parse strings for fading
-    const start_rgb = {
-        r: parseInt(start.slice(1, 3), 16),
-        g: parseInt(start.slice(3, 5), 16),
-        b: parseInt(start.slice(5, 7), 16),
-    };
-    const end_rgb = {
-        r: parseInt(end.slice(1, 3), 16),
-        g: parseInt(end.slice(3, 5), 16),
-        b: parseInt(end.slice(5, 7), 16),
-    };
-
-    // 3. Interpolate the R, G, and B values
-    const r = Math.round(start_rgb.r + (end_rgb.r - start_rgb.r) * fade);
-    const g = Math.round(start_rgb.g + (end_rgb.g - start_rgb.g) * fade);
-    const b = Math.round(start_rgb.b + (end_rgb.b - start_rgb.b) * fade);
-
-    return `rgb(${r}, ${g}, ${b})`;
-}
-
 // Global Data Selection Variables
-let selected_table = "";
-let old_table = "";
+let selected_document = "";
+let old_document = "";
 let selected_CUSEC = null;
 let selected_data = null;
 let aggregated = false;
 
 let snapshot;
-let table_names;
+let document_names;
 let amanda_snapshot;
 const amanda_label = "Demographics of Beneficiaries";
 let amandaLookup = {};
@@ -153,54 +76,13 @@ function updateDocLookup(){
     });
 }
 
-function formatData(number, dataset_name){
-    let pre = "";
-    let post = "";
-    try{
-        if(dataset_name.includes("fuente_de_ingreso")){
-            post = "%";
-        }else if(dataset_name.includes("fuente_de_ingreso")){
-            // TODO: for long numbers add in commas
-        }else if(dataset_name.includes("Porcentaje")){
-            post = "%";
-        }else if(dataset_name.includes("poblacion") && dataset_name != "poblacion_16_y_mas_total"){ // needs to exclude the total population over 16, which is just a number that needs commas, not a percentage
-            // needs to exclude the populations under ecenomic activity, which are just number of people
-            if(selected_table != "tabla_66687"){
-                post = "%";
-            }
-        }else if(dataset_name == "tasa_paro_hombres" || dataset_name == "tasa_paro_mujeres" || dataset_name == "tasa_empleo_mujeres" || dataset_name == "tasa_empleo_hombres" || dataset_name == "tasa_empleo_total" || dataset_name == "tasa_paro_total"){
-            number = (number*100).toFixed(2);
-            post = "%";
-        }else if(dataset_name.includes("tasa")){
-            console.log("found tasa: "+dataset_name);
-        }else if(selected_table == "tabla_30944"){
-            pre = "€";
-            // add commas
-            number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        }else if(number > 1000){
-            // add commas
-            number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        }
-        // once all other formatting is done, switch the decimal point to a comma if in spanish and the comma to a decimal point, since that is the standard formatting in spanish, but not if in english, since that is the standard formatting in english
-        if(lang == "es"){
-            // change to a temp character to mark decimal points
-            number = number.toString().replaceAll(".", "@");
-            // change commas to decimal points
-            number = number.toString().replaceAll(",", ".");
-            // change temp character to commas
-            number = number.toString().replaceAll("@", ",");
-        }
-    } catch (e){
-        console.log(dataset_name);
-        console.log(e);
-    };
-    return pre + number + post;
-}
 
-let table_name_lookup;
+
+let document_name_lookup;
 // maybe it should just be in spanish, since the data was published in spanish and the datanames are in spanish?
+// TODO: move this to a json
 if(lang == "es"){
-    table_name_lookup = {
+    document_name_lookup = {
         "tabla_30945": "Distribución de Fuentes de Ingreso",
         "tabla_30946": "Porcentaje de población con ingresos por unidad de consumo por debajo de determinados umbrales fijos por sexo",
         "tabla_30949": "Porcentaje de población con ingresos por unidad de consumo por debajo/encima de determinados umbrales relativos por sexo",
@@ -212,7 +94,7 @@ if(lang == "es"){
         "tabla_30944": "Indicadores de renta media y mediana"
     }
 }else{
-    table_name_lookup = {
+    document_name_lookup = {
         "tabla_30945": "Distribution of Sources of Income",
         "tabla_30946": "Percentage of population with income per consumption unit below certain fixed thresholds by sex",
         "tabla_30949": "Percentage of population with income per consumption unit below/above certain relative thresholds by sex",
@@ -281,11 +163,11 @@ function generate_selected_table(){
 
     // pull new names
     let dataset_names;
-    console.log(selected_table);
-    if(aggregated && selected_table == amanda_label){
+    console.log(selected_document);
+    if(aggregated && selected_document == amanda_label){
         dataset_names = Object.keys(amanda_snapshot.docs[0].data());
     }else{
-        dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_table]); // can be pulled from any neighborhood as long as we have data for them all
+        dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_document]); // can be pulled from any neighborhood as long as we have data for them all
     }
     // TODO: add failsafe for when we do not have data for a specific neighborhood
     
@@ -310,15 +192,15 @@ function generate_selected_table(){
         }
         identifier.id = name+"i";
         if(aggregated){
-            if(selected_table == amanda_label){
+            if(selected_document == amanda_label){
                 console.log(amanda_snapshot.docs[0].data()[name]);
-                number.innerHTML = formatData(amanda_snapshot.docs[0].data()[name], name);
+                number.innerHTML = formatData(amanda_snapshot.docs[0].data()[name], name, selected_document);
             }else{
-                number.innerHTML = formatData(averages[selected_table][name], name);
+                number.innerHTML = formatData(averages[selected_document][name], name, selected_document);
             }
         }else{
             try{
-                number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_table][name], name);
+                number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_document][name], name, selected_document);
             }catch(e){
                 console.log(selected_CUSEC);
                 console.log(e);
@@ -336,10 +218,10 @@ function generate_selected_table(){
         row_container.appendChild(row);
     });
 
-    // if we switched tables, highlight the first heatmap and redraw it
-    if(old_table != selected_table){
+    // if we switched documents, highlight the first heatmap and redraw it
+    if(old_document != selected_document){
         highlightRow(dataset_names[0]+"i");
-        old_table = selected_table;
+        old_document = selected_document;
         drawHeatmap();
     }
 }
@@ -371,10 +253,10 @@ function stylePolygon(feature, min, max) {
     if(selected_data){
         // pull the selected statistic for that CUSEC to be used for color generation
         // HACK: needs to be diff for amanda data
-        if(selected_table == amanda_label){
+        if(selected_document == amanda_label){
             statistic = amandaLookup[selected_data];
         }else{
-            statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_table][selected_data];
+            statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_document][selected_data];
         }
     }
 
@@ -429,7 +311,7 @@ function onZoneMouseover(layer, CUSEC) {
         // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
         display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
         
-        layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_table][selected_data], selected_data), {
+        layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_document][selected_data], selected_data, selected_document), {
             closeButton: false, 
             offset: L.point(0, -10) // Prevents popup from flickering under the cursor
         });
@@ -450,6 +332,25 @@ function onZoneMouseover(layer, CUSEC) {
     // light highlight the selected neighborhood
     layer.setStyle({ weight: 5, color: hover_color, dashArray: '', fillOpacity: gradient_opacity });
     layer.bringToFront(); // Ensures the border highlight is visible above other layers
+}
+
+function onZoneClicked(feature, layer) {
+    const CUSEC = feature.properties.CUSEC;
+
+    // Popup appears on click by default
+    layer.bindPopup(CUSEC, {
+        closeButton: false, 
+        offset: L.point(0, -10) // Prevents popup from flickering under the cursor
+    });
+    
+    // make the polygon static if the aggregate data is being displayed
+    if(aggregated){
+        return
+    }
+
+    // otherwise enable highlighs on click and mouseover
+    layer.on('click', (e) => {onZoneSelected(layer, CUSEC)});
+    layer.on('mouseover', (e) => {onZoneMouseover(layer, CUSEC)});
 }
 
 function drawHeatmap(){
@@ -475,10 +376,10 @@ function drawHeatmap(){
 
         try {
             // HACK: should maybe make a selected collection level to avoid this. Especially since the amanda data does not have a min or max rn
-            if(selected_table == amanda_label){
+            if(selected_document == amanda_label){
                 stat_dump.push(amanda_snapshot.docs[0].data()[selected_data]);
             }else{
-                stat_dump.push(data[1]["datasets"][selected_table][selected_data]);
+                stat_dump.push(data[1]["datasets"][selected_document][selected_data]);
             }
         } catch (error){ 
             console.log("CUSEC: "+data[0]);
@@ -495,25 +396,7 @@ function drawHeatmap(){
     // console.log(" drawing map layer...");
     mapLayer = L.geoJson(geoJSON, {
         style: feature => stylePolygon(feature, min, max),
-        onEachFeature: function(feature, layer) {
-            const CUSEC = feature.properties.CUSEC;
-
-            // Popup appears on click by default
-            layer.bindPopup(CUSEC, {
-                closeButton: false, 
-                offset: L.point(0, -10) // Prevents popup from flickering under the cursor
-            });
-            
-            // make the polygon static if the aggregate data is being displayed
-            if(aggregated){
-                return
-            }
-
-            layer.on('click', (e) => {onZoneSelected(layer, CUSEC)});
-
-            layer.on('mouseover', (e) => {onZoneMouseover(layer, CUSEC)});
-
-        }
+        onEachFeature: onZoneClicked
     }).addTo(map);
 
     // update the legend
@@ -526,8 +409,8 @@ function drawHeatmap(){
     const left_label = document.getElementById("left-label");
     const right_label = document.getElementById("right-label");
     if(selected_data){
-        left_label.innerHTML = formatData(min, selected_data);
-        right_label.innerHTML = formatData(max, selected_data);
+        left_label.innerHTML = formatData(min, selected_data, selected_document);
+        right_label.innerHTML = formatData(max, selected_data, selected_document);
     }else{
         // No dataset has been selected yet, cannot make a legend
         left_label.innerHTML = "N/A";
@@ -541,10 +424,10 @@ function generateDropdownOptions(){
     // clear old options (if there are any)
     dropdown.innerHTML = "";
 
-    table_names.forEach((name) => {
+    document_names.forEach((name) => {
         var dropdown_element = document.createElement("option");
-        if(table_name_lookup[name]){
-            dropdown_element.innerHTML = table_name_lookup[name]; // print a human readable tablename
+        if(document_name_lookup[name]){
+            dropdown_element.innerHTML = document_name_lookup[name]; // print a human readable documentname
         }else{
             dropdown_element.innerHTML = name;
         }
@@ -552,8 +435,33 @@ function generateDropdownOptions(){
         dropdown.appendChild(dropdown_element);
     });
 
-    // set the default table name so that the dataset names can be pulled
-    selected_table = table_names[0];
+    // set the default document name so that the dataset names can be pulled
+    selected_document = document_names[0];
+}
+function calculateAggregateData(){
+    const docs = snapshot.docs;
+    // look in each document for each statistic for each document
+    document_names.forEach((document_name) => {
+        // console.log(document_name);
+        const stat_names = Object.keys(docs[0].data()["datasets"][document_name]);
+        // console.log(stat_names);
+        averages[document_name] = {};
+        stat_names.forEach(stat_name => {
+            // console.log(stat_name);
+            averages[document_name][stat_name] = 0;
+            docs.forEach(doc => {
+                try{
+                    averages[document_name][stat_name] += doc.data()["datasets"][document_name][stat_name];
+                    // console.log(doc.data()["datasets"][document_name][stat_name]);
+                } catch (error){
+                    // console.log("doc at the end");
+                }
+            });
+            const l = docs.length - 2;
+            // console.log(l); // should be number of zones
+            averages[document_name][stat_name] = (averages[document_name][stat_name]/l).toFixed(2);
+        });
+    });
 }
 
 async function fetchZoneData() {
@@ -574,20 +482,20 @@ async function fetchZoneData() {
 
     // generate a dropdown to put all of the statistics
     const dropdown = document.getElementById("statistics");
-    function update_tablename(e){
+    function update_documentname(e){
         // this breaks because Owen decided to add data messily
         // clean up manually maybe
         // if(e.target.value == amanda_label){
-        //     selected_table = 
+        //     selected_document = 
         // }else{
-        selected_table = e.target.value;
+        selected_document = e.target.value;
         // }
         generate_selected_table();
     }
-    dropdown.addEventListener("click", update_tablename);
+    dropdown.addEventListener("click", update_documentname);
 
-    // store table names from snapshot
-    table_names = Object.keys(snapshot.docs[0].data()["datasets"]); // can be pulled from any dataset, so the first is used
+    // store document names from snapshot
+    document_names = Object.keys(snapshot.docs[0].data()["datasets"]); // can be pulled from any dataset, so the first is used
 
     generateDropdownOptions();
 
@@ -605,30 +513,7 @@ async function fetchZoneData() {
 
     // calculate average data
     // TODO: use weighted average instead
-    const docs = snapshot.docs;
-    // look in each document for each statistic for each table
-    table_names.forEach((table_name) => {
-        // console.log(table_name);
-        const stat_names = Object.keys(docs[0].data()["datasets"][table_name]);
-        // console.log(stat_names);
-        averages[table_name] = {};
-        stat_names.forEach(stat_name => {
-            // console.log(stat_name);
-            averages[table_name][stat_name] = 0;
-            docs.forEach(doc => {
-                try{
-                    averages[table_name][stat_name] += doc.data()["datasets"][table_name][stat_name];
-                    // console.log(doc.data()["datasets"][table_name][stat_name]);
-                } catch (error){
-                    // console.log("doc at the end");
-                }
-            });
-            const l = docs.length - 2;
-            // console.log(l); // should be number of zones
-            averages[table_name][stat_name] = (averages[table_name][stat_name]/l).toFixed(2);
-        });
-    });
-    console.log(averages);
+    calculateAggregateData();
 
   } catch (error) {
     console.error("Error pulling Firestore data:", error);
@@ -662,24 +547,20 @@ const toggle_switch = document.getElementById("toggle");
 toggle_switch.addEventListener("change", (e) => {
     aggregated = e.target.checked;
     const cusec_element = document.getElementById("CUSEC");
+    
+    // switch to view of aggregated data for the whole city or
+    // reset to display section-specific data
+    drawHeatmap();
+
     if(aggregated){
-        // switch to view of aggregated data for the whole city
-        drawHeatmap();
-        
-        table_names.push(amanda_label);
-        generateDropdownOptions();
-
+        document_names.push(amanda_label);
         cusec_element.innerHTML = "---";
-        generate_selected_table();
-    }else{
-        // reset to display section-specific data
-        drawHeatmap();
-        
-        table_names.pop(amanda_label);
-        generateDropdownOptions();
-
+    }else{    
+        document_names.pop(amanda_label);
         cusec_element.innerHTML = selected_CUSEC;
-        generate_selected_table();
     }
+
+    generateDropdownOptions();
+    generate_selected_table();
     // TODO: can I use onZoneSelected here?
 })
