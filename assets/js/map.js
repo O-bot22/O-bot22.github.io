@@ -188,10 +188,15 @@ function generate_selected_table(){
     // pull new names
     let dataset_names;
     console.log(selected_document);
-    if(aggregated && selected_document == beneficiary_label){
-        dataset_names = Object.keys(beneficiary_snapshot.docs[0].data());
+    if(selected_collection == gov_collection_name){
+        dataset_names = Object.keys(dataLookup[selected_CUSEC]["datasets"][selected_document]);
+        // dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_document]); // can be pulled from any neighborhood as long as we have data for them all
+        // dataset_names = Object.keys(beneficiary_snapshot.docs[0].data());
+    }else if(selected_collection == beneficiary_collection_name){
+        console.log(beneficiaryLookup)
+        dataset_names = Object.keys(beneficiaryLookup[selected_document]);;
     }else{
-        dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_document]); // can be pulled from any neighborhood as long as we have data for them all
+        console.log(":(");
     }
     // TODO: add failsafe for when we do not have data for a specific neighborhood
     
@@ -215,20 +220,19 @@ function generate_selected_table(){
             identifier.innerHTML = formatted_name;
         }
         identifier.id = name+"i";
-        if(aggregated){
-            if(selected_document == beneficiary_label){
-                // console.log(beneficiary_snapshot.docs[0].data()[name]);
-                number.innerHTML = formatData(beneficiary_snapshot.docs[0].data()[name], name, selected_document);
-            }else{
-                number.innerHTML = formatData(averages[selected_document][name], name, selected_document);
-            }
-        }else{
+
+        if(selected_collection == gov_collection_name){
             try{
+                // cusec, "datasets", document name, data name
                 number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_document][name], name, selected_document);
             }catch(e){
                 console.log(selected_CUSEC);
                 console.log(e);
             }
+        }else if(selected_collection == beneficiary_collection_name){
+            number.innerHTML = formatData(beneficiaryLookup[selected_document][name], name, selected_document);
+        }else{
+            console.log(":(");
         }
         number.id = name+"#";
 
@@ -288,7 +292,6 @@ function stylePolygon(feature, min, max) {
         f = right_color;
     }else{
         f = getRainbowGradient(statistic, min, max);
-        console.log("statistic:\t"+statistic+"\tcolor:\t"+f);
     } 
     return {
         fillColor: f,
@@ -334,9 +337,11 @@ function onZoneMouseover(layer, CUSEC) {
         // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
         display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
         
+        // TODO: fix for all datasets
         layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_document][selected_data], selected_data, selected_document), {
             closeButton: false, 
-            offset: L.point(0, -10) // Prevents popup from flickering under the cursor
+            offset: L.point(0, -10), // Prevents popup from flickering under the cursor
+            autoPan: false
         });
     }
 

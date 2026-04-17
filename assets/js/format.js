@@ -1,4 +1,5 @@
 // used in map.js to format the data in the legend and the popups
+// TODO: add percentages for previous data
 function formatData(number, dataset_name, selected_table){
     let pre = "";
     let post = "";
