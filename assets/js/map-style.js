@@ -3,10 +3,12 @@ const highlight_color = "#c9ffc9";
 const gradient_hue = 200;
 const hover_color = "#66ff66";
 const selected_color = '#000000';
-const left_color =  "#2a7b9b";
-const middle_color = "#FFFFFF";
-const right_color = "#FF0000";
+
+// newsest used reight and left gradient colors
+const rgb1 = [255, 0, 0];
+const rgb2 = [0,0,255];
 const gradient_opacity = .7;
+
 
 /**
  * Generates an HSL color along a gradient of a specific hue.
@@ -78,4 +80,13 @@ function getMultiColorGradient(value, min, max, color1, color2, color3) {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-export { getHueGradient, getMultiColorGradient, highlight_color, hover_color, selected_color, left_color, middle_color, right_color, gradient_opacity };
+function getRainbowGradient(value, min, max) {
+    const clamped = Math.max(min, Math.min(max, value));
+    const range = max - min;
+    const d = range === 0 ? 0 : (clamped - min) / range;
+    // find a color d% between a1 and a2
+    const rgd_array = rgb1.map((p, i) => Math.floor(rgb1[i] + d * (rgb2[i] - rgb1[i])))
+    return `rgba(${rgd_array.join(",")}, 1)`
+}
+
+export { getHueGradient, getMultiColorGradient, getRainbowGradient, highlight_color, hover_color, selected_color, gradient_opacity };

@@ -9,7 +9,7 @@
 
 
 import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
-import { getHueGradient, getMultiColorGradient, highlight_color, hover_color, selected_color, left_color, middle_color, right_color, gradient_opacity } from './map-style.js';
+import { getHueGradient, getMultiColorGradient, getRainbowGradient, highlight_color, hover_color, selected_color, gradient_opacity } from './map-style.js';
 import { formatData } from './format.js';
 
 
@@ -287,7 +287,8 @@ function stylePolygon(feature, min, max) {
     if(aggregated){
         f = right_color;
     }else{
-        f = getMultiColorGradient(statistic, min, max, left_color, middle_color, right_color);
+        f = getRainbowGradient(statistic, min, max);
+        console.log("statistic:\t"+statistic+"\tcolor:\t"+f);
     } 
     return {
         fillColor: f,
@@ -421,11 +422,9 @@ function drawHeatmap(){
     }).addTo(map);
 
     // update the legend
-    const left_box = document.getElementById("L");
-    const right_box = document.getElementById("R");
+    const gradient_row = document.getElementById("gradient");
 
-    left_box.style = "background-color: " + left_color + "; opacity: " + gradient_opacity;
-    right_box.style = "background-color: " + right_color + "; opacity: " + gradient_opacity;
+    gradient_row.style = "background: linear-gradient(to right, "+getRainbowGradient(min, min, max)+", "+getRainbowGradient(max, min, max)+");"+"opacity: " + gradient_opacity;
 
     const left_label = document.getElementById("left-label");
     const right_label = document.getElementById("right-label");
@@ -518,6 +517,9 @@ function handleDataLoaded(){
 
     const dropdown = document.getElementById("statistics");
     dropdown.addEventListener("click", update_documentname);
+
+    // default to the first collection
+    selected_collection = gov_collection_name;
 
     // default to showing government data first
     document_names = gov_doc_names;
