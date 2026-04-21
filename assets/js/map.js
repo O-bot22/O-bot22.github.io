@@ -1,10 +1,10 @@
 /**
  * TODO:
- * add data from beneficiary (district level ideally)
- * add polygon for whole city
  * add sources on the site so readers can find out citations
  * possibly refactor into multiple js files for maintainability
- * add support for multiple beneficiary tables
+ * weighted average
+ * translations for other datasets
+ * clean up naming conventions
  */
 
 
@@ -41,9 +41,10 @@ let beneficiary_doc_names = [];
 let beneficiaryLookup = {};
 
 // IQP data will go here
-const aggregate_collection_name = "IQP";
-let aggregate_snapshot;
-let aggregate_names;
+const IQP_collection_name = "City";
+let IQP_snapshot;
+let IQP_doc_names = [];
+let IQPLookup = {};
 
 
 
@@ -193,8 +194,10 @@ function generate_selected_table(){
         // dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_document]); // can be pulled from any neighborhood as long as we have data for them all
         // dataset_names = Object.keys(beneficiary_snapshot.docs[0].data());
     }else if(selected_collection == beneficiary_collection_name){
-        console.log(beneficiaryLookup)
-        dataset_names = Object.keys(beneficiaryLookup[selected_document]);;
+        dataset_names = Object.keys(beneficiaryLookup[selected_document]);
+    }else if(selected_collection == IQP_collection_name){
+        // console.log(IQPLookup);
+        dataset_names = Object.keys(IQPLookup[selected_document]);
     }else{
         console.log(":(");
     }
@@ -206,6 +209,8 @@ function generate_selected_table(){
         const row = document.createElement("tr");
         const identifier = document.createElement("td");
         const number = document.createElement("td");
+
+        console.log("Dataset: "+name);
 
         // fill columns
         // every id must be different, so append an i or #, so that it can later be pulled to redraw the heatmap
@@ -231,6 +236,8 @@ function generate_selected_table(){
             }
         }else if(selected_collection == beneficiary_collection_name){
             number.innerHTML = formatData(beneficiaryLookup[selected_document][name], name, selected_document);
+        }else if(selected_collection == IQP_collection_name){
+            number.innerHTML = formatData(IQPLookup[selected_document][name], name, selected_document);
         }else{
             console.log(":(");
         }
@@ -281,6 +288,8 @@ function stylePolygon(feature, min, max) {
             statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_document][selected_data];
         }else if(selected_collection == beneficiary_collection_name){
             statistic = beneficiaryLookup[selected_data];
+        }else if(selected_collection == IQP_collection_name){
+            statistic = IQPLookup[selected_data];
         }else{
             console.log("need 2 implement");
         }
@@ -337,7 +346,7 @@ function onZoneMouseover(layer, CUSEC) {
         // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
         display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
         
-        // TODO: fix for all datasets
+        // TODO: fix for all datasets!!!!
         layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_document][selected_data], selected_data, selected_document), {
             closeButton: false, 
             offset: L.point(0, -10), // Prevents popup from flickering under the cursor
@@ -405,6 +414,9 @@ function drawHeatmap(){
             }else if(selected_collection == beneficiary_collection_name){
                 // may not work
                 stat_dump.push(beneficiary_snapshot.docs[0].data()[selected_data]);
+            }else if(selected_collection == IQP_collection_name){
+                // may not work
+                stat_dump.push(IQP_snapshot.docs[0].data()[selected_data]);
             }else{
                 console.log("need 2 implement");
             }
@@ -495,10 +507,14 @@ function calculateAggregateData(){
 function update_collection(e){
     selected_collection = e.target.value;
 
+    console.log(selected_collection);
+
     if(selected_collection == gov_collection_name){
         document_names = gov_doc_names;
     }else if(selected_collection == beneficiary_collection_name){
         document_names = beneficiary_doc_names;
+    }else if(selected_collection == IQP_collection_name){
+        document_names = IQP_doc_names;
     }else{
         console.log(":(");
     }
@@ -594,22 +610,22 @@ async function fetchBeneficiaryData() {
     }
 }
 
-async function fetchAggregateData() {
+async function fetchIQPData() {
     try{
-        // TODO: fill this out
-        // const colRef = collection(db, "beneficiary");
+        const colRef = collection(db, IQP_collection_name);
 
-        // // store the firebase response globally
-        // beneficiary_snapshot = await getDocs(colRef);
+        // store the firebase response globally
+        IQP_snapshot = await getDocs(colRef);
 
-        // if (beneficiary_snapshot.empty) {
-        //     console.log("No documents found.");
-        //     return;
-        // }
-
-        // parse look up
-
-        // console.log(beneficiary_snapshot.docs[0].data());
+        if (IQP_snapshot.empty) {
+            console.log("No documents found.");
+            return;
+        }
+        
+        IQPLookup = parseDocs(IQP_snapshot);
+        IQP_snapshot.docs.forEach(doc => {
+            IQP_doc_names.push(doc.id);
+        });
     } catch (error) {
         console.error("Error pulling Firestore data:", error);
     }
@@ -619,7 +635,7 @@ async function fetchAggregateData() {
 Promise.all([
     fetchZoneData(),
     fetchBeneficiaryData(),
-    fetchAggregateData()
+    fetchIQPData()
 ]).then(handleDataLoaded);
 
 // const toggle_switch = document.getElementById("toggle");

@@ -10,13 +10,14 @@
  * Used files:
  * 'C:/Users/owenr/Downloads/Aggregated Amanda Data - Copy of Copy of Hoja1.json'
  * "C:/Users/owenr/Downloads/Previous Open Ended Puerto Real Data.xlsx - Database Format.json"
+ * C:/Users/owenr/Downloads/Aggregated Amanda Data - Copy of Copy of Hoja1.json
  */
 
 
-const data = require("C:/Users/owenr/Downloads/Aggregated Amanda Data - Copy of Copy of Hoja1.json"); // Your converted Excel data
-const document_name = "Numerical Questions";
+const data = require("C:/Users/owenr/Downloads/Survey Data - For Firebase Upload(Aggregated data for upload).json"); // Your converted Excel data
+const document_name = "IQP Data";
 
-
+console.log("File loaded");
 
 const admin = require('firebase-admin');
 
@@ -25,10 +26,11 @@ process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8888";
 
 admin.initializeApp({ projectId: "puerto-real-energy-poverty" });
 const db = admin.firestore();
+console.log("connected!");
 
 async function upload(data) {
   for (const item of data) {
-    const docRef = db.collection('Amanda').doc(document_name);
+    const docRef = db.collection('City').doc(document_name);
 
     try {
       await docRef.set(item);
