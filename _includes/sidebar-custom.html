@@ -1,6 +1,13 @@
-<label id="dataset-label" class="translatable" for="statistics">Choose a dataset table:</label>
-<select name="statistics" id="statistics">
+<label id="collection-label" class="translatable" for="collection">Choose a dataset:</label>
+<select name="collection" id="collection">
+    <!-- value is what is used to find the collection in Firestore -->
+    <option value="Zones">INE Public Data</option>
+    <option value="Beneficiary Data">Data from Social Program Beneficiaries</option>
+    <option value="City">IQP Data</option>
 </select>
+
+<label id="dataset-label" class="translatable" for="statistics">Choose a table:</label>
+<select name="statistics" id="statistics"></select>
 
 <table>
     <tbody>
@@ -45,7 +52,7 @@
             <th id="left-label"></th>
             <th id="right-label" style="text-align: right"></th>
         </tr>
-        <tr>
+        <tr id="gradient">
             <td id="L" class="boxes"></td>
             <td id="R" class="boxes"></td>
         </tr>
@@ -53,11 +60,12 @@
 </table>
 
 <!-- Toggle sections and city view -->
-<span>
+ <!-- This should be locked on for certain datasets, but toggleable for the government data -->
+<!-- <span>
     <span id="Section View" class="translatable">Section View</span>
     <label class="switch">
         <input type="checkbox" id="toggle">
         <span class="slider"></span>
     </label>
     <span id="City View" class="translatable">City View</span>
-</span>
+</span> -->

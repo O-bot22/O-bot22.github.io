@@ -1,0 +1,1 @@
+This folder is super messy. Idea is that scripts are run locally with Nodejs to upload data to the local firestore emulator or to the production database

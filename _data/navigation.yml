@@ -3,3 +3,5 @@ main:
     url: /map/
   - title: "Energy Usage Tips"
     url: /assets/data/Puerto%20Real%20Energy%20Brochure.pdf
+  - title: "Project Overview"
+    url: /project/
