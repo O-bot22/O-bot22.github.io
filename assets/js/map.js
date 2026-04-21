@@ -29,7 +29,7 @@ let selected_CUSEC = null;
 let aggregated = false;
 
 // original government data
-const gov_collection_name = "Zones";
+const gov_collection_name = "Zones"; // MUST MATCH THE NAME IN FIREBASE EXACTLY, AND THE NAME IN THE DATASET DROPDOWN (as defined in sidebar-custom.js)
 let gov_doc_names;
 let snapshot;
 let dataLookup = {};  // to store firebase data
@@ -62,8 +62,8 @@ const lang = params.get("lang") || "en";
 const res = await fetch(`/lang/${lang}.json`);
 let translations = await res.json();
 // documentname translation file
-const documents_res = await fetch('/lang/datasets-'+lang+'.json');
-let dataset_translations = await documents_res.json();
+const dataset_translations = await fetch('/lang/datasets-' + lang + '.json').then(response => response.json());
+const document_name_lookup = await fetch('/lang/documents-' + lang + '.json').then(response => response.json());
 
 
 // Load Background Map
@@ -103,35 +103,6 @@ function parseDocs(snapshot){
 }
 
 
-
-let document_name_lookup;
-// maybe it should just be in spanish, since the data was published in spanish and the datanames are in spanish?
-// TODO: move this to a json
-if(lang == "es"){
-    document_name_lookup = {
-        "tabla_30945": "Distribución de Fuentes de Ingreso",
-        "tabla_30946": "Porcentaje de población con ingresos por unidad de consumo por debajo de determinados umbrales fijos por sexo",
-        "tabla_30949": "Porcentaje de población con ingresos por unidad de consumo por debajo/encima de determinados umbrales relativos por sexo",
-        "tabla_30952": "Indicadores Demográficos",
-        "tabla_37689": "Índice de Gini y Distribución de la renta P80/P20",
-        "tabla_66685": "Nivel de formación alcanzado",
-        "tabla_69142": "Población por nacionalidad (española/extranjera), edad y sexo",
-        "tabla_66687": "Relación con la actividad económica",
-        "tabla_30944": "Indicadores de renta media y mediana"
-    }
-}else{
-    document_name_lookup = {
-        "tabla_30945": "Distribution of Sources of Income",
-        "tabla_30946": "Percentage of population with income per consumption unit below certain fixed thresholds by sex",
-        "tabla_30949": "Percentage of population with income per consumption unit below/above certain relative thresholds by sex",
-        "tabla_30952": "Demographic Indicators",
-        "tabla_37689": "Gini Index and Income Distribution (P80/P20)",
-        "tabla_66685": "Level of Education Attained",
-        "tabla_69142": "Population by Nationality (Spanish/Foreign), Age, and Sex",
-        "tabla_66687": "Relationship with Economic Activity",
-        "tabla_30944": "Indicators of Average and Median Income"
-    }
-}
 
 function highlightRow(id){
     // get the data name
