@@ -59,8 +59,8 @@ const lang = params.get("lang") || "en";
 // can be set with /map/?lang=es
 
 // pull translation file and store globally
-const res = await fetch(`/lang/${lang}.json`);
-let translations = await res.json();
+// const res = await fetch(`/lang/${lang}.json`);
+const translations = await fetch('/lang/' + lang + '.json').then(response => response.json());
 // documentname translation file
 const dataset_translations = await fetch('/lang/datasets-' + lang + '.json').then(response => response.json());
 const document_name_lookup = await fetch('/lang/documents-' + lang + '.json').then(response => response.json());
@@ -257,9 +257,12 @@ function stylePolygon(feature, min, max) {
         if(selected_collection == gov_collection_name){
             statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_document][selected_data];
         }else if(selected_collection == beneficiary_collection_name){
-            statistic = beneficiaryLookup[selected_data];
+            statistic = beneficiaryLookup[selected_document][selected_data];
         }else if(selected_collection == IQP_collection_name){
-            statistic = IQPLookup[selected_data];
+            console.log("selected_collection: "+selected_collection);
+            console.log("selected_document: "+selected_document);
+            statistic = parseFloat(IQPLookup[selected_document][selected_data]);
+            console.log(statistic, min, max);
         }else{
             console.log("need 2 implement");
         }
@@ -271,7 +274,7 @@ function stylePolygon(feature, min, max) {
         f = right_color;
     }else{
         f = getRainbowGradient(statistic, min, max);
-    } 
+    }
     return {
         fillColor: f,
         weight: 0,
@@ -316,16 +319,23 @@ function onZoneMouseover(layer, CUSEC) {
         // always capitalize first letter of the display name for better formatting, since some of the dataset names are all lowercase
         display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
         
-        // TODO: fix for all datasets!!!!
-        try{
-            layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_document][selected_data], selected_data, selected_document), {
-                closeButton: false, 
-                offset: L.point(0, -10), // Prevents popup from flickering under the cursor
-                autoPan: false
-            });
-        }catch (e){
-            console.debug("ignore bind popup");
+        let data_value;
+
+        if(selected_collection == gov_collection_name){
+            data_value = dataLookup[CUSEC]["datasets"][selected_document][selected_data];
+        }else if(selected_collection == beneficiary_collection_name){
+            data_value = beneficiaryLookup[selected_document][selected_data];
+        }else if(selected_collection == IQP_collection_name){
+            data_value = IQPLookup[selected_document][selected_data];
+        }else{
+            console.log("need 2 implement");
         }
+
+        layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(data_value, selected_data, selected_document), {
+            closeButton: false, 
+            offset: L.point(0, -10), // Prevents popup from flickering under the cursor
+            autoPan: false
+        });
     }
 
     // unhighlight all other popups except the currently selected one
@@ -365,6 +375,7 @@ function onZoneClicked(feature, layer) {
 }
 
 function drawHeatmap(){
+    console.log("drawing heatmap for "+selected_data+" in "+selected_document);
     // if aggregated is true, draw all of Puerto Real as a connected region
 
     // remove the layer from the map so that it can be re added
@@ -395,11 +406,11 @@ function drawHeatmap(){
         max = Math.max(...stat_dump);
         min = Math.min(...stat_dump);
     }else if(selected_collection == beneficiary_collection_name){
-        max = beneficiaryLookup[selected_document][selected_data];
-        min = beneficiaryLookup[selected_document][selected_data];
+        max = parseFloat(beneficiaryLookup[selected_document][selected_data]);
+        min = max;
     }else if(selected_collection == IQP_collection_name){
-        max = IQPLookup[selected_document][selected_data];
-        min = IQPLookup[selected_document][selected_data];
+        max = parseFloat(IQPLookup[selected_document][selected_data]);
+        min = max;
     }else{
         console.log("need 2 implement");
     }
@@ -518,10 +529,10 @@ function handleDataLoaded(){
     dropdown.addEventListener("click", update_documentname);
 
     // default to the first collection
-    selected_collection = gov_collection_name;
+    selected_collection = IQP_collection_name;
 
     // default to showing government data first
-    document_names = gov_doc_names;
+    document_names = IQP_doc_names;
 
     // generate a dropdown to put all of the statistics
     generateDocumentOptions();
