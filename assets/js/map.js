@@ -36,7 +36,7 @@ let dataLookup = {};  // to store firebase data
 const averages = {};    // to store aggregated data
 
 // data from Amanda
-const beneficiary_collection_name = "Amanda";
+const beneficiary_collection_name = "Beneficiary Data";
 let beneficiary_snapshot;
 let beneficiary_doc_names = [];
 let beneficiaryLookup = {};

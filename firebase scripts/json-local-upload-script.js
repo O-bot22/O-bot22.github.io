@@ -12,10 +12,21 @@
  * "C:/Users/owenr/Downloads/Previous Open Ended Puerto Real Data.xlsx - Database Format.json"
  * C:/Users/owenr/Downloads/Aggregated Amanda Data - Copy of Copy of Hoja1.json
  */
+const upload = require("./generic-json-upload.js");
+
+// Your converted Excel data
+// const data = require("C:/Users/owenr/Downloads/Survey Data - For Firebase Upload(Aggregated data for upload).json");
+// const data = require("C:/Users/owenr/Downloads/Previous Open Ended Puerto Real Data.xlsx - Database Format.json");
+const data = require('C:/Users/owenr/Downloads/Aggregated Amanda Data - Copy of Copy of Hoja1.json');
+
+const document_name = "Numerical Data";
+// const document_name = "Open Ended Questions";
+// const document_name = "IQP Data";
+
+const collection_name = "Beneficiary Data";
+// const collection_name = "City";
 
 
-const data = require("C:/Users/owenr/Downloads/Survey Data - For Firebase Upload(Aggregated data for upload).json"); // Your converted Excel data
-const document_name = "IQP Data";
 
 console.log("File loaded");
 
@@ -28,17 +39,6 @@ admin.initializeApp({ projectId: "puerto-real-energy-poverty" });
 const db = admin.firestore();
 console.log("connected!");
 
-async function upload(data) {
-  for (const item of data) {
-    const docRef = db.collection('City').doc(document_name);
 
-    try {
-      await docRef.set(item);
-      console.log(`✅ Document ${document_name} created successfully!`);
-    } catch (error) {
-      console.error("❌ Error seeding document:", error);
-    }
-  }
-}
 
-upload(data);
+upload.upload(db, data, document_name, collection_name);
