@@ -1,10 +1,16 @@
 // used in map.js to format the data in the legend and the popups
 // TODO: add percentages for previous data
-function formatData(number, dataset_name, selected_table){
+function formatData(number, dataset_name, selected_document){
     let pre = "";
     let post = "";
+    
     try{
-        if(dataset_name.includes("fuente_de_ingreso")){
+        if(selected_document.includes("IQP Data")){
+            /* pass, data is already formatted */
+        }else if(selected_document.includes("Open Ended Questions")){
+            number = (number*100).toFixed(2);
+            post = "%";
+        }else if(dataset_name.includes("fuente_de_ingreso")){
             post = "%";
         }else if(dataset_name.includes("fuente_de_ingreso")){
             // TODO: for long numbers add in commas
@@ -12,7 +18,7 @@ function formatData(number, dataset_name, selected_table){
             post = "%";
         }else if(dataset_name.includes("poblacion") && dataset_name != "poblacion_16_y_mas_total"){ // needs to exclude the total population over 16, which is just a number that needs commas, not a percentage
             // needs to exclude the populations under ecenomic activity, which are just number of people
-            if(selected_table != "tabla_66687"){
+            if(selected_document != "tabla_66687"){
                 post = "%";
             }
         }else if(dataset_name == "tasa_paro_hombres" || dataset_name == "tasa_paro_mujeres" || dataset_name == "tasa_empleo_mujeres" || dataset_name == "tasa_empleo_hombres" || dataset_name == "tasa_empleo_total" || dataset_name == "tasa_paro_total"){
@@ -20,7 +26,7 @@ function formatData(number, dataset_name, selected_table){
             post = "%";
         }else if(dataset_name.includes("tasa")){
             console.log("found tasa: "+dataset_name);
-        }else if(selected_table == "tabla_30944"){
+        }else if(selected_document == "tabla_30944"){
             pre = "€";
             // add commas
             number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");

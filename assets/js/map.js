@@ -5,6 +5,7 @@
  * weighted average
  * translations for other datasets
  * clean up naming conventions
+ * add third table from Justing for Amanda
  */
 
 
@@ -196,7 +197,6 @@ function generate_selected_table(){
     }else if(selected_collection == beneficiary_collection_name){
         dataset_names = Object.keys(beneficiaryLookup[selected_document]);
     }else if(selected_collection == IQP_collection_name){
-        // console.log(IQPLookup);
         dataset_names = Object.keys(IQPLookup[selected_document]);
     }else{
         console.log(":(");
@@ -210,7 +210,6 @@ function generate_selected_table(){
         const identifier = document.createElement("td");
         const number = document.createElement("td");
 
-        console.log("Dataset: "+name);
 
         // fill columns
         // every id must be different, so append an i or #, so that it can later be pulled to redraw the heatmap
@@ -320,7 +319,7 @@ function onZoneSelected(layer, CUSEC){
     // update the Statistics Sidebar
     // CUSEC number
     const cusec_element = document.getElementById("CUSEC");
-    if(aggregated){
+    if(selected_collection == beneficiary_collection_name || selected_collection == IQP_collection_name){
         cusec_element.innerHTML = "---";
     }else{                
         cusec_element.innerHTML = CUSEC;
@@ -347,11 +346,15 @@ function onZoneMouseover(layer, CUSEC) {
         display_name = display_name.charAt(0).toUpperCase() + display_name.slice(1);
         
         // TODO: fix for all datasets!!!!
-        layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_document][selected_data], selected_data, selected_document), {
-            closeButton: false, 
-            offset: L.point(0, -10), // Prevents popup from flickering under the cursor
-            autoPan: false
-        });
+        try{
+            layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(dataLookup[CUSEC]["datasets"][selected_document][selected_data], selected_data, selected_document), {
+                closeButton: false, 
+                offset: L.point(0, -10), // Prevents popup from flickering under the cursor
+                autoPan: false
+            });
+        }catch (e){
+            console.debug("ignore bind popup");
+        }
     }
 
     // unhighlight all other popups except the currently selected one
@@ -398,37 +401,38 @@ function drawHeatmap(){
         mapLayer.remove();
     }
 
-    // pull the statistic for each neighborhood to get max and min numbers
-    // store each value in an array for processing at the end
-    const stat_dump = [];
-    Object.entries(dataLookup).forEach(data => {
-        // filter out metadata
-        if(data[0] == "_query" || data[0] == "_readTime"){
-            return
-        }
-
-        try {
-            // HACK: should maybe make a selected collection level to avoid this. Especially since the beneficiary data does not have a min or max rn
-            if(selected_collection == gov_collection_name){
-                stat_dump.push(data[1]["datasets"][selected_document][selected_data]);
-            }else if(selected_collection == beneficiary_collection_name){
-                // may not work
-                stat_dump.push(beneficiary_snapshot.docs[0].data()[selected_data]);
-            }else if(selected_collection == IQP_collection_name){
-                // may not work
-                stat_dump.push(IQP_snapshot.docs[0].data()[selected_data]);
-            }else{
-                console.log("need 2 implement");
+    let min, max;
+    if(selected_collection == gov_collection_name){
+        // pull the statistic for each neighborhood to get max and min numbers
+        // store each value in an array for processing at the end
+        const stat_dump = [];
+        Object.entries(dataLookup).forEach(data => {
+            // filter out metadata
+            if(data[0] == "_query" || data[0] == "_readTime"){
+                return
             }
-        } catch (error){ 
-            console.log("CUSEC: "+data[0]);
-            console.error("Error pulling neighborhood data:", error);
-        }
-    })
-    // console.log("pulled for all entries");
 
-    const max = Math.max(...stat_dump);
-    const min = Math.min(...stat_dump);
+            try {
+                stat_dump.push(data[1]["datasets"][selected_document][selected_data]);
+            } catch (error){ 
+                console.log("CUSEC: "+data[0]);
+                console.error("Error pulling neighborhood data:", error);
+            }
+        })
+        // console.log("pulled for all entries");
+
+        max = Math.max(...stat_dump);
+        min = Math.min(...stat_dump);
+    }else if(selected_collection == beneficiary_collection_name){
+        max = beneficiaryLookup[selected_document][selected_data];
+        min = beneficiaryLookup[selected_document][selected_data];
+    }else if(selected_collection == IQP_collection_name){
+        max = IQPLookup[selected_document][selected_data];
+        min = IQPLookup[selected_document][selected_data];
+    }else{
+        console.log("need 2 implement");
+    }
+
     // console.log("Max:\t"+max+"\nMin:\t"+min);
 
     // Use the lookup in the Leaflet layer
@@ -461,7 +465,7 @@ function generateDocumentOptions(){
     // clear old options (if there are any)
     dropdown.innerHTML = "";
 
-    console.log(document_names);
+    // console.log(document_names);
     document_names.forEach((name) => {
         var dropdown_element = document.createElement("option");
         if(document_name_lookup[name]){
@@ -521,6 +525,9 @@ function update_collection(e){
     
     // generate a dropdown to put all of the statistics
     generateDocumentOptions();
+
+    // generate the table for the first document in the new collection
+    generate_selected_table();
 }
 
 // called when a new document is selected from the dropdown
