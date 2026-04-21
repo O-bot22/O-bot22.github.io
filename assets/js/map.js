@@ -4,14 +4,13 @@
  * possibly refactor into multiple js files for maintainability
  * weighted average
  * translations for other datasets
- * clean up naming conventions
- * add third table from Justing for Amanda
  */
 
 
 import { db, collection, getDocs, connectFirestoreEmulator, query, where } from './firebase_config.js';
 import { getHueGradient, getMultiColorGradient, getRainbowGradient, highlight_color, hover_color, selected_color, gradient_opacity } from './map-style.js';
 import { formatData } from './format.js';
+import { lockSlider, unlockSlider, parseDocs, highlightRow, calculateAggregateData } from './helpers.js';
 
 
 // Global Data Selection Variables
@@ -33,7 +32,7 @@ const gov_collection_name = "Zones"; // MUST MATCH THE NAME IN FIREBASE EXACTLY,
 let gov_doc_names;
 let snapshot;
 let dataLookup = {};  // to store firebase data
-const averages = {};    // to store aggregated data
+let averages = {};    // to store aggregated data
 
 // data from Amanda
 const beneficiary_collection_name = "Beneficiary Data";
@@ -94,49 +93,11 @@ if (location.hostname === "127.0.0.1") {
 // console.log("firebase imported!");
 
 
-function parseDocs(snapshot){
-    const dataLookup = {};
-    snapshot.forEach(doc => {
-        dataLookup[doc.id] = doc.data();
-    });
-    return dataLookup;
-}
-
-
-
-function highlightRow(id){
-    // get the data name
-    if(id){
-        // update globally selected data
-        selected_data = id.substring(0, id.length - 1);
-    }else{
-        // if no new element was clicked, highlight the last selected row and arbitrarily start with the number element
-        id = selected_data+"#"
-    }
-    // store which td was clicked
-    const e_type = id.substring(id.length - 1, id.length);
-    
-    // unhighlight all rows
-    const row_container = document.getElementById("row_container");
-    for(const child of row_container.children) {
-        for(const grandchild of child.children){
-            grandchild.style.backgroundColor = "white"; // TODO: fix color
-        }
-    }
-
-    // highlight the selected row
-    // change the base element
-    const td_element = document.getElementById(id);
-    td_element.style.backgroundColor = highlight_color;
-    // get the other element of the row
-    const other_element = document.getElementById(selected_data + (e_type == "#" ? "i" : "#"));
-    other_element.style.backgroundColor = highlight_color;
-}
 
 function newDatasetSelectedCallback(e){
     // ! only the td elements are clickable, not the tr !
 
-    highlightRow(e.target.id);
+    selected_data = highlightRow(e.target.id, selected_data);
 
     console.log("clicked on dataset: "+e.target.id);
 
@@ -148,23 +109,24 @@ function newDatasetSelectedCallback(e){
 function generate_selected_table(){
     // TODO: if showing aggregated data, then add it so it can be shown, no matter what CUSEC is selected
 
-    // check that a neighborhood has been selected
-    if(! selected_CUSEC && ! aggregated){
-        console.log("please select a neighborhood");
-        return
-    }
 
     // clear old rows
     const row_container = document.getElementById("row_container");
     row_container.innerHTML = "";
 
+    // check that a neighborhood has been selected
+    if(! selected_CUSEC && ! aggregated && selected_collection == gov_collection_name){
+        // reset table
+        row_container.innerHTML = '<tr><td id="initial-row" class="translatable" colspan="2" style="width:100%">Please select a neighborhood to get started...</td></tr>';
+        return
+    }
+
     // pull new names
     let dataset_names;
-    console.log(selected_document);
     if(selected_collection == gov_collection_name){
+        console.log(dataLookup[selected_CUSEC]);
         dataset_names = Object.keys(dataLookup[selected_CUSEC]["datasets"][selected_document]);
         // dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_document]); // can be pulled from any neighborhood as long as we have data for them all
-        // dataset_names = Object.keys(beneficiary_snapshot.docs[0].data());
     }else if(selected_collection == beneficiary_collection_name){
         dataset_names = Object.keys(beneficiaryLookup[selected_document]);
     }else if(selected_collection == IQP_collection_name){
@@ -225,7 +187,7 @@ function generate_selected_table(){
 
     // if we switched documents, highlight the first heatmap and redraw it
     if(old_document != selected_document){
-        highlightRow(dataset_names[0]+"i");
+        selected_data = highlightRow(dataset_names[0]+"i", selected_data);
         old_document = selected_document;
         drawHeatmap();
     }
@@ -255,26 +217,23 @@ function stylePolygon(feature, min, max) {
         // pull the selected statistic for that CUSEC to be used for color generation
         // HACK: needs to be diff for beneficiary data
         if(selected_collection == gov_collection_name){
-            statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_document][selected_data];
+            if(aggregated){
+                statistic = averages[selected_document][selected_data];
+            }else{
+                statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_document][selected_data];
+            }
         }else if(selected_collection == beneficiary_collection_name){
             statistic = beneficiaryLookup[selected_document][selected_data];
         }else if(selected_collection == IQP_collection_name){
-            console.log("selected_collection: "+selected_collection);
-            console.log("selected_document: "+selected_document);
             statistic = parseFloat(IQPLookup[selected_document][selected_data]);
-            console.log(statistic, min, max);
         }else{
             console.log("need 2 implement");
         }
     }
 
     // fill with a standard color when showing aggregate data
-    let f = 0;
-    if(aggregated){
-        f = right_color;
-    }else{
-        f = getRainbowGradient(statistic, min, max);
-    }
+    const f = getRainbowGradient(statistic, min, max);
+
     return {
         fillColor: f,
         weight: 0,
@@ -304,7 +263,7 @@ function onZoneSelected(layer, CUSEC){
     generate_selected_table(); // <- this breaks the first time a zone is selected
 
     // keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
-    highlightRow();
+    selected_data = highlightRow(null, selected_data);
 };
 function onZoneMouseover(layer, CUSEC) {
     // close all other popups
@@ -331,6 +290,7 @@ function onZoneMouseover(layer, CUSEC) {
             console.log("need 2 implement");
         }
 
+        // breaks for aggregate INE data
         layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(data_value, selected_data, selected_document), {
             closeButton: false, 
             offset: L.point(0, -10), // Prevents popup from flickering under the cursor
@@ -375,8 +335,7 @@ function onZoneClicked(feature, layer) {
 }
 
 function drawHeatmap(){
-    console.log("drawing heatmap for "+selected_data+" in "+selected_document);
-    // if aggregated is true, draw all of Puerto Real as a connected region
+    // if aggregated is true, draw all of Puerto Real as a connected region ??
 
     // remove the layer from the map so that it can be re added
     if(mapLayer){
@@ -463,31 +422,6 @@ function generateDocumentOptions(){
     selected_document = document_names[0];
 }
 
-function calculateAggregateData(){
-    const docs = snapshot.docs;
-    // look in each document for each statistic for each document
-    document_names.forEach((document_name) => {
-        // console.log(document_name);
-        const stat_names = Object.keys(docs[0].data()["datasets"][document_name]);
-        // console.log(stat_names);
-        averages[document_name] = {};
-        stat_names.forEach(stat_name => {
-            // console.log(stat_name);
-            averages[document_name][stat_name] = 0;
-            docs.forEach(doc => {
-                try{
-                    averages[document_name][stat_name] += doc.data()["datasets"][document_name][stat_name];
-                    // console.log(doc.data()["datasets"][document_name][stat_name]);
-                } catch (error){
-                    // console.log("doc at the end");
-                }
-            });
-            const l = docs.length - 2;
-            // console.log(l); // should be number of zones
-            averages[document_name][stat_name] = (averages[document_name][stat_name]/l).toFixed(2);
-        });
-    });
-}
 
 // called when a new collection is selected from the dropdown
 function update_collection(e){
@@ -497,10 +431,15 @@ function update_collection(e){
 
     if(selected_collection == gov_collection_name){
         document_names = gov_doc_names;
+        
+        // format aggregate data selector
+        unlockSlider();
     }else if(selected_collection == beneficiary_collection_name){
         document_names = beneficiary_doc_names;
+        lockSlider();
     }else if(selected_collection == IQP_collection_name){
         document_names = IQP_doc_names;
+        lockSlider();
     }else{
         console.log(":(");
     }
@@ -534,6 +473,11 @@ function handleDataLoaded(){
     // default to showing government data first
     document_names = IQP_doc_names;
 
+    // default to the first selected dataset
+    selected_document = document_names[0];
+    selected_data = Object.keys(IQPLookup[selected_document])[0];
+    generate_selected_table();
+
     // generate a dropdown to put all of the statistics
     generateDocumentOptions();
 
@@ -551,7 +495,10 @@ function handleDataLoaded(){
 
     // calculate average data
     // TODO: use weighted average instead
-    calculateAggregateData();
+    averages = calculateAggregateData(snapshot.docs, gov_doc_names);
+
+    // by defauly, put slider to aggregated, and then lock it
+    lockSlider();
 }
 
 async function fetchZoneData() {
@@ -627,24 +574,22 @@ Promise.all([
     fetchIQPData()
 ]).then(handleDataLoaded);
 
-// const toggle_switch = document.getElementById("toggle");
-// toggle_switch.addEventListener("change", (e) => {
-//     aggregated = e.target.checked;
-//     const cusec_element = document.getElementById("CUSEC");
+const toggle_switch = document.getElementById("toggle");
+toggle_switch.addEventListener("change", (e) => {
+    aggregated = e.target.checked;
+    const cusec_element = document.getElementById("CUSEC");
     
-//     // switch to view of aggregated data for the whole city or
-//     // reset to display section-specific data
-//     drawHeatmap();
+    // switch to view of aggregated data for the whole city or
+    // reset to display section-specific data
+    drawHeatmap();
 
-//     if(aggregated){
-//         document_names.push(beneficiary_label);
-//         cusec_element.innerHTML = "---";
-//     }else{    
-//         document_names.pop(beneficiary_label);
-//         cusec_element.innerHTML = selected_CUSEC;
-//     }
+    if(aggregated){
+        cusec_element.innerHTML = "---";
+    }else{    
+        cusec_element.innerHTML = selected_CUSEC;
+    }
 
-//     generateDocumentOptions();
-//     generate_selected_table();
-//     // TODO: can I use onZoneSelected here?
-// })
+    generateDocumentOptions();
+    generate_selected_table();
+    // TODO: can I use onZoneSelected here?
+});

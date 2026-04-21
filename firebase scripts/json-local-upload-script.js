@@ -17,11 +17,13 @@ const upload = require("./generic-json-upload.js");
 // Your converted Excel data
 // const data = require("C:/Users/owenr/Downloads/Survey Data - For Firebase Upload(Aggregated data for upload).json");
 // const data = require("C:/Users/owenr/Downloads/Previous Open Ended Puerto Real Data.xlsx - Database Format.json");
-const data = require('C:/Users/owenr/Downloads/Aggregated Amanda Data - Copy of Copy of Hoja1.json');
+// const data = require('C:/Users/owenr/Downloads/Aggregated Amanda Data - Copy of Copy of Hoja1.json');
+const data = require("C:/Users/owenr/Downloads/Previous EP Questions Puerto Real Data.xlsx - Sheet1.json");
 
-const document_name = "Numerical Data";
+// const document_name = "Numerical Data";
 // const document_name = "Open Ended Questions";
 // const document_name = "IQP Data";
+const document_name = "Reasons for Energy Poverty";
 
 const collection_name = "Beneficiary Data";
 // const collection_name = "City";
