@@ -1,9 +1,9 @@
 <label id="collection-label" class="translatable" for="collection">Choose a Collection:</label>
 <select name="collection" id="collection">
     <!-- value is what is used to find the collection in Firestore -->
-    <option value="City">IQP Data</option>
-    <option value="Zones">INE Public Data</option>
-    <option value="Beneficiary Data">Data from Social Program Beneficiaries</option>
+    <option value="City" id="iqp-collection" class="translatable">IQP Data</option>
+    <option value="Zones" id="ine-collection" class="translatable">INE Public Data</option>
+    <option value="Beneficiary Data" id="beneficiary-collection" class="translatable">Data from Social Program Beneficiaries</option>
 </select>
 
 <label id="dataset-label" class="translatable" for="statistics">Choose a Dataset:</label>
@@ -60,7 +60,7 @@
 </table>
 
 <!-- Toggle sections and city view -->
- <!-- This should be locked on for certain datasets, but toggleable for the government data -->
+<!-- This should be locked on for certain datasets, but toggleable for the government data -->
 <span>
     <span id="Section View" class="translatable">Section View</span>
     <label class="switch">
@@ -68,4 +68,5 @@
         <span class="slider" id="slider-span"></span>
     </label>
     <span id="City View" class="translatable">City View</span>
+    <p id="slider-note-container">*<span id="slider-note" class="translatable">Section view not available for this collection</span></p>
 </span>

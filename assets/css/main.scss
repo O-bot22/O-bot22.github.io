@@ -139,5 +139,12 @@ input:checked + .slider:before {
 
 #lang-button {
   padding: 5px;
-  background-color: #ffb0b0;
+  // match color with footer
+  background-color: rgb(241.7, 242.5, 243.1);
+  border-radius: 5px;
+}
+
+#slider-note-container {
+  margin-top: 0.5em;
+  color: red;
 }

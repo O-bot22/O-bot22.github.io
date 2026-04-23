@@ -3,7 +3,6 @@
  * add sources on the site so readers can find out citations
  * possibly refactor into multiple js files for maintainability
  * weighted average
- * translations for other datasets
  * hide rural polygons when showing IQP data
  * add more percentages to legend and make wider
  * add heat hazard index data
@@ -13,6 +12,7 @@
  * sheet of all CUSECs as well as aggregated against all variable of a collection
  * default to spanish
  * add color to top header?
+ * add data about how students heat their homes
  */
 
 
@@ -63,7 +63,7 @@ let geoJSON;
 
 // Get language from URL
 const params = new URLSearchParams(window.location.search);
-const lang = params.get("lang") || "en";
+const lang = params.get("lang") || "es";
 // can be set with /map/?lang=es
 
 // pull translation file and store globally
@@ -135,7 +135,6 @@ function generate_selected_table(){
     if(selected_collection == gov_collection_name){
         console.log(dataLookup[selected_CUSEC]);
         dataset_names = Object.keys(dataLookup[selected_CUSEC]["datasets"][selected_document]);
-        // dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_document]); // can be pulled from any neighborhood as long as we have data for them all
     }else if(selected_collection == beneficiary_collection_name){
         dataset_names = Object.keys(beneficiaryLookup[selected_document]);
     }else if(selected_collection == IQP_collection_name){
@@ -344,8 +343,6 @@ function onZoneClicked(feature, layer) {
 }
 
 function drawHeatmap(){
-    // if aggregated is true, draw all of Puerto Real as a connected region ??
-
     // remove the layer from the map so that it can be re added
     if(mapLayer){
         mapLayer.remove();
@@ -427,8 +424,7 @@ function generateDocumentOptions(){
         dropdown.appendChild(dropdown_element);
     });
 
-    // set the default document name so that the dataset names can be pulled
-    selected_document = document_names[0];
+    // also, since this should be called every time a new colleciton is selected, messs with the slider
 }
 
 
@@ -438,23 +434,31 @@ function update_collection(e){
 
     console.log(selected_collection);
 
+    const slider_note_container = document.getElementById("slider-note-container");
+
     if(selected_collection == gov_collection_name){
         document_names = gov_doc_names;
         
         // format aggregate data selector
         unlockSlider();
+        slider_note_container.style.display = "none";
     }else if(selected_collection == beneficiary_collection_name){
         document_names = beneficiary_doc_names;
         lockSlider();
+        slider_note_container.style.display = "block";
     }else if(selected_collection == IQP_collection_name){
         document_names = IQP_doc_names;
         lockSlider();
+        slider_note_container.style.display = "block";
     }else{
         console.log(":(");
     }
     
     // generate a dropdown to put all of the statistics
     generateDocumentOptions();
+    
+    // set the default document name so that the dataset names can be pulled
+    selected_document = document_names[0];
 
     // generate the table for the first document in the new collection
     generate_selected_table();
@@ -506,7 +510,7 @@ function handleDataLoaded(){
     // TODO: use weighted average instead
     averages = calculateAggregateData(snapshot.docs, gov_doc_names);
 
-    // by defauly, put slider to aggregated, and then lock it
+    // by default, put slider to aggregated, and then lock it
     lockSlider();
 }
 
@@ -583,13 +587,13 @@ Promise.all([
     fetchIQPData()
 ]).then(handleDataLoaded);
 
+
 const toggle_switch = document.getElementById("toggle");
 toggle_switch.addEventListener("change", (e) => {
     aggregated = e.target.checked;
     const cusec_element = document.getElementById("CUSEC");
     
-    // switch to view of aggregated data for the whole city or
-    // reset to display section-specific data
+    // switch to view of aggregated data for the whole city or reset to display section-specific data
     drawHeatmap();
 
     if(aggregated){
@@ -598,7 +602,7 @@ toggle_switch.addEventListener("change", (e) => {
         cusec_element.innerHTML = selected_CUSEC;
     }
 
+    // don't reset the selected dataset when switching between aggregate and non aggregate views, since the datasets are mostly the same, and it is more intuitive to keep the same dataset selected when switching back and forth
     generateDocumentOptions();
     generate_selected_table();
-    // TODO: can I use onZoneSelected here?
 });

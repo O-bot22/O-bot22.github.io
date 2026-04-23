@@ -7,12 +7,12 @@ let navbar = document.getElementById("site-nav");
 let lang_button = document.createElement("a");
 
 const params = new URLSearchParams(window.location.search);
-const lang = params.get("lang") || "en";
+const lang = params.get("lang") || "es"; // set spanish as default
 
 const base_url = location.origin + location.pathname;
 
 // change all links on the page to point to the correct language
-if(lang != "en"){
+if(lang != "es"){
     const link_elements = document.getElementsByTagName("a");
     Array.from(link_elements).forEach(elem => {
         elem.href = elem.href + "?lang=" + lang;
@@ -20,17 +20,17 @@ if(lang != "en"){
 }
 
 lang_button.id = "lang-button";
-if(lang == "en"){
-    lang_button.innerHTML = "Español";
-    lang_button.href = base_url + "?lang=es";
-}else{
+if(lang == "es"){
     lang_button.innerHTML = "English";
-    lang_button.href = base_url; // could also be + "?lang=en" but this is cleaner
+    lang_button.href = base_url + "?lang=en";
+}else{
+    lang_button.innerHTML = "Español";
+    lang_button.href = base_url; // could also be + "?lang=es" but this is cleaner
 }
 
 navbar.appendChild(lang_button);
 
-// only change the contents if is is not english, since that is the default
+// only change the contents if is is not english, since that is what it was written in
 if(lang != "en"){
     // pull the translation file
     fetch(`/lang/${lang}.json`).then(res => {
@@ -44,7 +44,7 @@ if(lang != "en"){
             });
         })
     })
-    
+
     // Fill in page for the selected language
     changeLanguage(lang);
 }
