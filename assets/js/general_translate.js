@@ -19,6 +19,7 @@ if(lang != "en"){
     })
 }
 
+lang_button.id = "lang-button";
 if(lang == "en"){
     lang_button.innerHTML = "Español";
     lang_button.href = base_url + "?lang=es";
