@@ -394,16 +394,21 @@ function drawHeatmap(){
 
     gradient_row.style = "background: linear-gradient(to right, "+getRainbowGradient(min, min, max)+", "+getRainbowGradient(max, min, max)+");"+"opacity: " + gradient_opacity;
 
-    const left_label = document.getElementById("left-label");
-    const right_label = document.getElementById("right-label");
-    if(selected_data){
-        left_label.innerHTML = formatData(min, selected_data, selected_document);
-        right_label.innerHTML = formatData(max, selected_data, selected_document);
-    }else{
-        // No dataset has been selected yet, cannot make a legend
-        left_label.innerHTML = "N/A";
-        right_label.innerHTML = "N/A";
+    const labels = document.getElementById("label-row").children;
+    for(let i = 0; i < labels.length; i++){
+        const scaled_value = min + (i/(labels.length-1))*(max-min);
+        labels[i].innerHTML = formatData(scaled_value, selected_data, selected_document, 1);
     }
+    // const left_label = document.getElementById("left-label");
+    // const right_label = document.getElementById("right-label");
+    // if(selected_data){
+    //     left_label.innerHTML = formatData(min, selected_data, selected_document);
+    //     right_label.innerHTML = formatData(max, selected_data, selected_document);
+    // }else{
+    //     // No dataset has been selected yet, cannot make a legend
+    //     left_label.innerHTML = "N/A";
+    //     right_label.innerHTML = "N/A";
+    // }
 }
 
 function generateDocumentOptions(){

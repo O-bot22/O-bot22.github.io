@@ -1,6 +1,6 @@
 // used in map.js to format the data in the legend and the popups
 // TODO: add percentages for previous data
-function formatData(number, dataset_name, selected_document){
+function formatData(number, dataset_name, selected_document, round=2){
     let pre = "";
     let post = "";
     
@@ -8,12 +8,11 @@ function formatData(number, dataset_name, selected_document){
         if(selected_document.includes("IQP Data")){
             /* pass, data is already formatted */
         }else if(selected_document.includes("Open Ended Questions")){
-            number = (number*100).toFixed(2);
+            number = (number*100).toFixed(round);
             post = "%";
         }else if(dataset_name.includes("fuente_de_ingreso")){
+            number = number.toFixed(round);
             post = "%";
-        }else if(dataset_name.includes("fuente_de_ingreso")){
-            // TODO: for long numbers add in commas
         }else if(dataset_name.includes("Porcentaje")){
             post = "%";
         }else if(dataset_name.includes("poblacion") && dataset_name != "poblacion_16_y_mas_total"){ // needs to exclude the total population over 16, which is just a number that needs commas, not a percentage
@@ -22,7 +21,7 @@ function formatData(number, dataset_name, selected_document){
                 post = "%";
             }
         }else if(dataset_name == "tasa_paro_hombres" || dataset_name == "tasa_paro_mujeres" || dataset_name == "tasa_empleo_mujeres" || dataset_name == "tasa_empleo_hombres" || dataset_name == "tasa_empleo_total" || dataset_name == "tasa_paro_total"){
-            number = (number*100).toFixed(2);
+            number = (number*100).toFixed(round);
             post = "%";
         }else if(dataset_name.includes("tasa")){
             console.log("found tasa: "+dataset_name);
