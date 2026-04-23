@@ -4,7 +4,6 @@
  * possibly refactor into multiple js files for maintainability
  * weighted average
  * hide rural polygons when showing IQP data
- * add more percentages to legend and make wider
  * add heat hazard index data
  * add UCA logo
  * pie chart with number of people who responded to each question in the survey

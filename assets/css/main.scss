@@ -162,7 +162,7 @@ input:checked + .slider:before {
 }
 
 #lang-button {
-  padding: 5px;
+  padding: 10px;
   // match color with footer
   background-color: rgb(241.7, 242.5, 243.1);
   border-radius: 5px;
@@ -171,4 +171,9 @@ input:checked + .slider:before {
 #slider-note-container {
   margin-top: 0.5em;
   color: red;
+}
+
+.masthead__inner-wrap {
+  margin-left: 5em;
+  max-width: 1440px;
 }
