@@ -82,11 +82,3 @@ let link = document.createElement("link");
 link.rel = "icon";
 link.href = "/assets/images/logo.png";
 document.head.appendChild(link);
-
-// supa dupa sneaky add the UCA logo to the footer, since it is not included in the footer
-let footer = document.getElementById("footer").children[0];
-console.log(footer);
-let img = document.createElement("img");
-img.src = "/assets/images/logoFooterUCA_05.png";
-img.style.height = "50px";
-footer.appendChild(img);

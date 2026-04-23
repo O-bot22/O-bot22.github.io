@@ -1,16 +1,12 @@
 /**
  * TODO:
  * add sources on the site so readers can find out citations
- * possibly refactor into multiple js files for maintainability
  * weighted average
  * hide rural polygons when showing IQP data
  * add heat hazard index data
- * add UCA logo
  * pie chart with number of people who responded to each question in the survey
  * one button to download selected data, and one to download complete INE data
  * sheet of all CUSECs as well as aggregated against all variable of a collection
- * default to spanish
- * add color to top header?
  * add data about how students heat their homes
  */
 
@@ -34,6 +30,8 @@ let old_document = "";
 let selected_CUSEC = null;
 
 let aggregated = false;
+let showRural = true; // global variable to track whether rural areas should be shown or not, default to true so that they are shown when the page is first loaded
+const ruralDistricts = ["1102804002", "1102804001", "1102804004", "1102804003", "1102804006"];
 
 // original government data
 const gov_collection_name = "Zones"; // MUST MATCH THE NAME IN FIREBASE EXACTLY, AND THE NAME IN THE DATASET DROPDOWN (as defined in sidebar-custom.js)
@@ -132,7 +130,6 @@ function generate_selected_table(){
     // pull new names
     let dataset_names;
     if(selected_collection == gov_collection_name){
-        console.log(dataLookup[selected_CUSEC]);
         dataset_names = Object.keys(dataLookup[selected_CUSEC]["datasets"][selected_document]);
     }else if(selected_collection == beneficiary_collection_name){
         dataset_names = Object.keys(beneficiaryLookup[selected_document]);
@@ -218,6 +215,17 @@ function clearHighlights(topLayer){
 // used to generate the style for each GeoJSON polygon that is added to the heatmap
 function stylePolygon(feature, min, max) {
     // Pull the income from our lookup table using the GeoJSON ID
+
+    // if there is no feature (cuz it was filtered out as rural), just return a transparent polygon
+    if(! feature){
+        return {
+            fillColor: "#000000",
+            weight: 0,
+            fillOpacity: 0.0,
+            color: 'white'
+        };
+    }
+
     // check that a dataset has been selected already
     let statistic;
     if(selected_data){
@@ -249,6 +257,11 @@ function stylePolygon(feature, min, max) {
     };
 }
 function onZoneSelected(layer, CUSEC){
+    // ignore rural zones if they are not being shown
+    if(ruralDistricts.includes(CUSEC) && ! showRural){
+        return
+    }
+
     // unhighlight all other popups
     clearHighlights(layer);
 
@@ -273,6 +286,11 @@ function onZoneSelected(layer, CUSEC){
     selected_data = highlightRow(null, selected_data);
 };
 function onZoneMouseover(layer, CUSEC) {
+    // ignore rural zones
+    if(ruralDistricts.includes(CUSEC) && ! showRural){
+        return
+    }
+
     // close all other popups
     clearPopups(layer);
 
@@ -341,6 +359,21 @@ function onZoneClicked(feature, layer) {
     layer.on('mouseover', (e) => {onZoneMouseover(layer, CUSEC)});
 }
 
+function filterRural(feature){
+    if(showRural){
+       return feature
+    }else{
+        console.log("filtering rural areas...");
+        console.log(feature.properties.CUSEC);
+        if(ruralDistricts.includes(feature.properties.CUSEC)){
+            console.log("filtering out rural area: "+feature.properties.CUSEC);
+            return null
+        }else{
+            return feature
+        }
+    } 
+}
+
 function drawHeatmap(){
     // remove the layer from the map so that it can be re added
     if(mapLayer){
@@ -384,7 +417,7 @@ function drawHeatmap(){
     // Use the lookup in the Leaflet layer
     // console.log(" drawing map layer...");
     mapLayer = L.geoJson(geoJSON, {
-        style: feature => stylePolygon(feature, min, max),
+        style: feature => stylePolygon(filterRural(feature), min, max),
         onEachFeature: onZoneClicked
     }).addTo(map);
 
@@ -475,6 +508,14 @@ function update_documentname(e){
     generate_selected_table();
 }
 
+function onRuralToggle(e){
+    console.log("toggled rural areas: "+e.target.checked);
+    // update global varaible and redraw map
+    showRural = e.target.checked;
+
+    drawHeatmap();
+}
+
 function handleDataLoaded(){
     // Only runs once, after each dataset has been pulled and processed
 
@@ -509,6 +550,21 @@ function handleDataLoaded(){
         // draw for the first time
         drawHeatmap();
     });
+
+    var legend = L.control({position: 'topright'});
+
+    legend.onAdd = function (map) {
+        var div = L.DomUtil.create('div', 'info legend');
+        div.innerHTML += '<h4>Map Options</h4>';
+        div.innerHTML += "<input type='checkbox' id='rural-toggle' name='rural-toggle' checked><label for='rural-toggle' class='legend'>Show Rural Areas</label><br>";
+        // div.innerHTML += '<i style="background: #477AC2"></i><span>Water</span><br>';
+        // div.innerHTML += '<i style="background: #448D40"></i><span>Forest</span><br>';
+        return div;
+    };
+
+    legend.addTo(map);
+    document.getElementById("rural-toggle").addEventListener("change", onRuralToggle);
+    console.log(document.getElementById("rural-toggle"));
 
     // calculate average data
     // TODO: use weighted average instead
