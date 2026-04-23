@@ -1,18 +1,13 @@
 /**
  * TODO:
  * add sources on the site so readers can find out citations
- * possibly refactor into multiple js files for maintainability
  * weighted average
- * translations for other datasets
  * hide rural polygons when showing IQP data
- * add more percentages to legend and make wider
  * add heat hazard index data
- * add UCA logo
  * pie chart with number of people who responded to each question in the survey
  * one button to download selected data, and one to download complete INE data
  * sheet of all CUSECs as well as aggregated against all variable of a collection
- * default to spanish
- * add color to top header?
+ * add data about how students heat their homes
  */
 
 
@@ -35,6 +30,8 @@ let old_document = "";
 let selected_CUSEC = null;
 
 let aggregated = false;
+let showRural = true; // global variable to track whether rural areas should be shown or not, default to true so that they are shown when the page is first loaded
+const ruralDistricts = ["1102804002", "1102804001", "1102804004", "1102804003", "1102804006"];
 
 // original government data
 const gov_collection_name = "Zones"; // MUST MATCH THE NAME IN FIREBASE EXACTLY, AND THE NAME IN THE DATASET DROPDOWN (as defined in sidebar-custom.js)
@@ -63,7 +60,7 @@ let geoJSON;
 
 // Get language from URL
 const params = new URLSearchParams(window.location.search);
-const lang = params.get("lang") || "en";
+const lang = params.get("lang") || "es";
 // can be set with /map/?lang=es
 
 // pull translation file and store globally
@@ -133,9 +130,7 @@ function generate_selected_table(){
     // pull new names
     let dataset_names;
     if(selected_collection == gov_collection_name){
-        console.log(dataLookup[selected_CUSEC]);
         dataset_names = Object.keys(dataLookup[selected_CUSEC]["datasets"][selected_document]);
-        // dataset_names = Object.keys(snapshot.docs[0].data()["datasets"][selected_document]); // can be pulled from any neighborhood as long as we have data for them all
     }else if(selected_collection == beneficiary_collection_name){
         dataset_names = Object.keys(beneficiaryLookup[selected_document]);
     }else if(selected_collection == IQP_collection_name){
@@ -220,6 +215,17 @@ function clearHighlights(topLayer){
 // used to generate the style for each GeoJSON polygon that is added to the heatmap
 function stylePolygon(feature, min, max) {
     // Pull the income from our lookup table using the GeoJSON ID
+
+    // if there is no feature (cuz it was filtered out as rural), just return a transparent polygon
+    if(! feature){
+        return {
+            fillColor: "#000000",
+            weight: 0,
+            fillOpacity: 0.0,
+            color: 'white'
+        };
+    }
+
     // check that a dataset has been selected already
     let statistic;
     if(selected_data){
@@ -251,6 +257,11 @@ function stylePolygon(feature, min, max) {
     };
 }
 function onZoneSelected(layer, CUSEC){
+    // ignore rural zones if they are not being shown
+    if(ruralDistricts.includes(CUSEC) && ! showRural){
+        return
+    }
+
     // unhighlight all other popups
     clearHighlights(layer);
 
@@ -275,6 +286,11 @@ function onZoneSelected(layer, CUSEC){
     selected_data = highlightRow(null, selected_data);
 };
 function onZoneMouseover(layer, CUSEC) {
+    // ignore rural zones
+    if(ruralDistricts.includes(CUSEC) && ! showRural){
+        return
+    }
+
     // close all other popups
     clearPopups(layer);
 
@@ -343,9 +359,22 @@ function onZoneClicked(feature, layer) {
     layer.on('mouseover', (e) => {onZoneMouseover(layer, CUSEC)});
 }
 
-function drawHeatmap(){
-    // if aggregated is true, draw all of Puerto Real as a connected region ??
+function filterRural(feature){
+    if(showRural){
+       return feature
+    }else{
+        console.log("filtering rural areas...");
+        console.log(feature.properties.CUSEC);
+        if(ruralDistricts.includes(feature.properties.CUSEC)){
+            console.log("filtering out rural area: "+feature.properties.CUSEC);
+            return null
+        }else{
+            return feature
+        }
+    } 
+}
 
+function drawHeatmap(){
     // remove the layer from the map so that it can be re added
     if(mapLayer){
         mapLayer.remove();
@@ -388,7 +417,7 @@ function drawHeatmap(){
     // Use the lookup in the Leaflet layer
     // console.log(" drawing map layer...");
     mapLayer = L.geoJson(geoJSON, {
-        style: feature => stylePolygon(feature, min, max),
+        style: feature => stylePolygon(filterRural(feature), min, max),
         onEachFeature: onZoneClicked
     }).addTo(map);
 
@@ -397,16 +426,21 @@ function drawHeatmap(){
 
     gradient_row.style = "background: linear-gradient(to right, "+getRainbowGradient(min, min, max)+", "+getRainbowGradient(max, min, max)+");"+"opacity: " + gradient_opacity;
 
-    const left_label = document.getElementById("left-label");
-    const right_label = document.getElementById("right-label");
-    if(selected_data){
-        left_label.innerHTML = formatData(min, selected_data, selected_document);
-        right_label.innerHTML = formatData(max, selected_data, selected_document);
-    }else{
-        // No dataset has been selected yet, cannot make a legend
-        left_label.innerHTML = "N/A";
-        right_label.innerHTML = "N/A";
+    const labels = document.getElementById("label-row").children;
+    for(let i = 0; i < labels.length; i++){
+        const scaled_value = min + (i/(labels.length-1))*(max-min);
+        labels[i].innerHTML = formatData(scaled_value, selected_data, selected_document, 1);
     }
+    // const left_label = document.getElementById("left-label");
+    // const right_label = document.getElementById("right-label");
+    // if(selected_data){
+    //     left_label.innerHTML = formatData(min, selected_data, selected_document);
+    //     right_label.innerHTML = formatData(max, selected_data, selected_document);
+    // }else{
+    //     // No dataset has been selected yet, cannot make a legend
+    //     left_label.innerHTML = "N/A";
+    //     right_label.innerHTML = "N/A";
+    // }
 }
 
 function generateDocumentOptions(){
@@ -427,8 +461,7 @@ function generateDocumentOptions(){
         dropdown.appendChild(dropdown_element);
     });
 
-    // set the default document name so that the dataset names can be pulled
-    selected_document = document_names[0];
+    // also, since this should be called every time a new colleciton is selected, messs with the slider
 }
 
 
@@ -438,23 +471,31 @@ function update_collection(e){
 
     console.log(selected_collection);
 
+    const slider_note_container = document.getElementById("slider-note-container");
+
     if(selected_collection == gov_collection_name){
         document_names = gov_doc_names;
         
         // format aggregate data selector
         unlockSlider();
+        slider_note_container.style.display = "none";
     }else if(selected_collection == beneficiary_collection_name){
         document_names = beneficiary_doc_names;
         lockSlider();
+        slider_note_container.style.display = "block";
     }else if(selected_collection == IQP_collection_name){
         document_names = IQP_doc_names;
         lockSlider();
+        slider_note_container.style.display = "block";
     }else{
         console.log(":(");
     }
     
     // generate a dropdown to put all of the statistics
     generateDocumentOptions();
+    
+    // set the default document name so that the dataset names can be pulled
+    selected_document = document_names[0];
 
     // generate the table for the first document in the new collection
     generate_selected_table();
@@ -465,6 +506,14 @@ function update_documentname(e){
     selected_document = e.target.value;
     
     generate_selected_table();
+}
+
+function onRuralToggle(e){
+    console.log("toggled rural areas: "+e.target.checked);
+    // update global varaible and redraw map
+    showRural = e.target.checked;
+
+    drawHeatmap();
 }
 
 function handleDataLoaded(){
@@ -502,11 +551,26 @@ function handleDataLoaded(){
         drawHeatmap();
     });
 
+    var legend = L.control({position: 'topright'});
+
+    legend.onAdd = function (map) {
+        var div = L.DomUtil.create('div', 'info legend');
+        div.innerHTML += '<h4>Map Options</h4>';
+        div.innerHTML += "<input type='checkbox' id='rural-toggle' name='rural-toggle' checked><label for='rural-toggle' class='legend'>Show Rural Areas</label><br>";
+        // div.innerHTML += '<i style="background: #477AC2"></i><span>Water</span><br>';
+        // div.innerHTML += '<i style="background: #448D40"></i><span>Forest</span><br>';
+        return div;
+    };
+
+    legend.addTo(map);
+    document.getElementById("rural-toggle").addEventListener("change", onRuralToggle);
+    console.log(document.getElementById("rural-toggle"));
+
     // calculate average data
     // TODO: use weighted average instead
     averages = calculateAggregateData(snapshot.docs, gov_doc_names);
 
-    // by defauly, put slider to aggregated, and then lock it
+    // by default, put slider to aggregated, and then lock it
     lockSlider();
 }
 
@@ -583,13 +647,13 @@ Promise.all([
     fetchIQPData()
 ]).then(handleDataLoaded);
 
+
 const toggle_switch = document.getElementById("toggle");
 toggle_switch.addEventListener("change", (e) => {
     aggregated = e.target.checked;
     const cusec_element = document.getElementById("CUSEC");
     
-    // switch to view of aggregated data for the whole city or
-    // reset to display section-specific data
+    // switch to view of aggregated data for the whole city or reset to display section-specific data
     drawHeatmap();
 
     if(aggregated){
@@ -598,7 +662,7 @@ toggle_switch.addEventListener("change", (e) => {
         cusec_element.innerHTML = selected_CUSEC;
     }
 
+    // don't reset the selected dataset when switching between aggregate and non aggregate views, since the datasets are mostly the same, and it is more intuitive to keep the same dataset selected when switching back and forth
     generateDocumentOptions();
     generate_selected_table();
-    // TODO: can I use onZoneSelected here?
 });

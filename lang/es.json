@@ -1,15 +1,21 @@
 {
     "Map Display": "Visualización del mapa",
     "Energy Usage Tips": "Folleto de energía",
+    "Project Overview": "Descripción del proyecto",
 
     "Map Title": "Mapa Interactivo",
     "Map Attribution":"© Colaboradores de OpenStreetMap, estilo de mosaicos por el equipo humanitario de OpenStreetMap, alojado por OpenStreetMap Francia.",
     
+    "collection-label": "Elige un recopilación:",
+    "iqp-collection": "Datos del PCI",
+    "ine-collection": "Datos públicos del INE",
+    "beneficiary-collection": "Datos de beneficiarios de programas sociales",
     "dataset-label": "Elige un conjunto de datos:",
     "statistics-header": "Statisticas",
     "initial-row": "Seleccione un barrio para comenzar...",
     "minimum-label": "Mín",
     "maximum-label": "Máx",
+    "slider-note": "Vista de sección no disponible para este recopilación",
 
     "Section View": "Vista de sección",
     "City View": "Vista de la ciudad",
@@ -18,6 +24,7 @@
     "project-description": "Bienvenidos al proyecto WPI IQP sobre pobreza energética (patrocinado por la Universidad de Cádiz, UCA).",
     "project-description2": "Nuestra investigación explora el acceso a la energía, la sostenibilidad y la pobreza mediante la cartografía interactiva y el análisis.",
     "project-authors": "Autores del proyecto",
+    "community-page-header": "Alcance comunitario",
     "about": "Sobre Nosotros",
     "about-description": "Este es un Proyecto de Calificación Interdisciplinario (IQP, por sus siglas en inglés) en WPI centrado en la pobreza energética, la equidad y la visualización de datos.",
     "about-description2": "Utilice el mapa interactivo para explorar las métricas energéticas geoespaciales y el impacto en la comunidad."

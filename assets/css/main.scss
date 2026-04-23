@@ -60,10 +60,34 @@ table{
   font-size: 16px;
 }
 
+// boxes in the legend table
+#left-label {
+  padding: 0px;
+}
+
+th {
+  padding: 0px;
+  text-align: center;
+  // padding-left: 40px;
+}
+
+td.first-box{
+  // border-left: 3px solid black;
+}
+
 .boxes {
   // width: 1em;
-  padding-left : 40px;
-  padding-right: 40px;
+  padding: 0px;
+  padding-left : 24px;
+  padding-right: 24px;
+  // border-right: 3px solid black;
+  font-weight: bold;
+  color: white;
+  height: 1.5em;
+}
+
+.color-bar {
+  margin-left: 0.5em;
 }
 
 // always keep it opaque
@@ -138,6 +162,42 @@ input:checked + .slider:before {
 }
 
 #lang-button {
-  padding: 5px;
-  background-color: #ffb0b0;
+  padding: 10px;
+  // match color with footer
+  background-color: rgb(241.7, 242.5, 243.1);
+  border-radius: 5px;
 }
+
+#slider-note-container {
+  margin-top: 0.5em;
+  color: red;
+}
+
+.masthead__inner-wrap {
+  margin-left: 5em;
+  max-width: 1440px;
+}
+
+.masthead {
+  border: 3px solid rgb(241.7, 242.5, 243.1);
+}
+
+
+.legend {
+    padding: 6px 8px;
+    // background: white;
+    background: rgba(255,255,255,0.8);
+    line-height: 18px;
+    color: #555;
+}
+label.legend {
+  display: inline;
+    background: transparent;
+}
+// .legend i {
+//     width: 18px;
+//     height: 18px;
+//     float: left;
+//     margin-right: 8px;
+//     opacity: 0.7;
+// }
