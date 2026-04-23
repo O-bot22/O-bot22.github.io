@@ -4,6 +4,15 @@
  * possibly refactor into multiple js files for maintainability
  * weighted average
  * translations for other datasets
+ * hide rural polygons when showing IQP data
+ * add more percentages to legend and make wider
+ * add heat hazard index data
+ * add UCA logo
+ * pie chart with number of people who responded to each question in the survey
+ * one button to download selected data, and one to download complete INE data
+ * sheet of all CUSECs as well as aggregated against all variable of a collection
+ * default to spanish
+ * add color to top header?
  */
 
 
