@@ -1,9 +1,10 @@
 /**
  * TODO:
- * add heat hazard index data
  * add data about how students heat their homes? ask Nik
  * add sources on the site so readers can find out citations
  * pages for parts of our project
+ * translations for HHI
+ * add aggregate heat hazard index data
  * 
  * weighted average
  * pie chart with number of people who responded to each question in the survey https://www.w3schools.com/js/js_graphics_chartjs.asp toggle on/off with button in the legend
@@ -59,6 +60,10 @@ const heat_collection_name = "Heat Indices";
 let heat_doc_names = [];
 let heatLookup = {};
 
+
+const citation_numbers = {[gov_collection_name]: 1, [beneficiary_collection_name]: 2, [IQP_collection_name]: 3, [heat_collection_name]: 4};
+const citation_link = "https://docs.google.com/document/d/1Aok52nVBBPmk67bubLxlI0CMnhDcOjPCDLCTe4mwIQ8/edit?usp=sharing";
+console.log(citation_numbers);
 
 // global map variables
 let mapLayer;
@@ -165,6 +170,9 @@ function generate_selected_table(){
             formatted_name = formatted_name.replaceAll("_", " ");
             identifier.innerHTML = formatted_name;
         }
+
+        console.log(citation_numbers);
+        identifier.innerHTML += "<sup><a target='_blank' href='"+citation_link+"'>["+citation_numbers[selected_collection]+"]</a></sup>";
         identifier.id = name+"i";
 
         if(selected_collection == gov_collection_name){
