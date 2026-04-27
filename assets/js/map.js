@@ -1,13 +1,15 @@
 /**
  * TODO:
- * add sources on the site so readers can find out citations
- * weighted average
- * hide rural polygons when showing IQP data
  * add heat hazard index data
- * pie chart with number of people who responded to each question in the survey
- * one button to download selected data, and one to download complete INE data
- * sheet of all CUSECs as well as aggregated against all variable of a collection
- * add data about how students heat their homes
+ * add data about how students heat their homes? ask Nik
+ * add sources on the site so readers can find out citations
+ * pages for parts of our project
+ * 
+ * weighted average
+ * pie chart with number of people who responded to each question in the survey https://www.w3schools.com/js/js_graphics_chartjs.asp toggle on/off with button in the legend
+ * 
+ * one button to download selected data, and one to download complete INE data - sheet of all CUSECs as well as aggregated against all variable of a collection
+ * meet with sponsors for final once over
  */
 
 
@@ -46,12 +48,16 @@ let beneficiary_snapshot;
 let beneficiary_doc_names = [];
 let beneficiaryLookup = {};
 
-// IQP data will go here
+// Street Survey data will go here
 const IQP_collection_name = "City";
 let IQP_snapshot;
 let IQP_doc_names = [];
 let IQPLookup = {};
 
+// Heat Vulnerability Index
+const heat_collection_name = "Heat Indices";
+let heat_doc_names = [];
+let heatLookup = {};
 
 
 // global map variables
@@ -113,15 +119,12 @@ function newDatasetSelectedCallback(e){
 }
 
 function generate_selected_table(){
-    // TODO: if showing aggregated data, then add it so it can be shown, no matter what CUSEC is selected
-
-
     // clear old rows
     const row_container = document.getElementById("row_container");
     row_container.innerHTML = "";
 
     // check that a neighborhood has been selected
-    if(! selected_CUSEC && ! aggregated && selected_collection == gov_collection_name){
+    if(! selected_CUSEC && ! aggregated && (selected_collection == gov_collection_name || selected_collection == heat_collection_name)){
         // reset table
         row_container.innerHTML = '<tr><td id="initial-row" class="translatable" colspan="2" style="width:100%">Please select a neighborhood to get started...</td></tr>';
         return
@@ -135,6 +138,8 @@ function generate_selected_table(){
         dataset_names = Object.keys(beneficiaryLookup[selected_document]);
     }else if(selected_collection == IQP_collection_name){
         dataset_names = Object.keys(IQPLookup[selected_document]);
+    }else if(selected_collection == heat_collection_name){
+        dataset_names = Object.keys(heatLookup[selected_CUSEC][selected_document]);
     }else{
         console.log(":(");
     }
@@ -174,6 +179,8 @@ function generate_selected_table(){
             number.innerHTML = formatData(beneficiaryLookup[selected_document][name], name, selected_document);
         }else if(selected_collection == IQP_collection_name){
             number.innerHTML = formatData(IQPLookup[selected_document][name], name, selected_document);
+        }else if(selected_collection == heat_collection_name){
+            number.innerHTML = formatData(heatLookup[selected_CUSEC][selected_document][name], name, selected_document);
         }else{
             console.log(":(");
         }
@@ -241,6 +248,13 @@ function stylePolygon(feature, min, max) {
             statistic = beneficiaryLookup[selected_document][selected_data];
         }else if(selected_collection == IQP_collection_name){
             statistic = parseFloat(IQPLookup[selected_document][selected_data]);
+        }else if(selected_collection == heat_collection_name){
+            if(aggregated){
+                // TODO: add aggreates for HVI
+                // statistic = averages[selected_document][selected_data];
+            }else{
+                statistic = heatLookup[feature.properties.CUSEC][selected_document][selected_data];
+            }
         }else{
             console.log("need 2 implement");
         }
@@ -311,6 +325,8 @@ function onZoneMouseover(layer, CUSEC) {
             data_value = beneficiaryLookup[selected_document][selected_data];
         }else if(selected_collection == IQP_collection_name){
             data_value = IQPLookup[selected_document][selected_data];
+        }else if(selected_collection == heat_collection_name){
+            data_value = heatLookup[CUSEC][selected_document][selected_data];
         }else{
             console.log("need 2 implement");
         }
@@ -408,6 +424,27 @@ function drawHeatmap(){
     }else if(selected_collection == IQP_collection_name){
         max = parseFloat(IQPLookup[selected_document][selected_data]);
         min = max;
+    }else if(selected_collection == heat_collection_name){
+        // pull the statistic for each neighborhood to get max and min numbers
+        // store each value in an array for processing at the end
+        const stat_dump = [];
+        Object.entries(heatLookup).forEach(data => {
+            // filter out metadata
+            if(data[0] == "_query" || data[0] == "_readTime"){
+                return
+            }
+
+            try {
+                stat_dump.push(data[1][selected_document][selected_data]);
+            } catch (error){ 
+                console.log("CUSEC: "+data[0]);
+                console.error("Error pulling neighborhood data:", error);
+            }
+        })
+        // console.log("pulled for all entries");
+
+        max = Math.max(...stat_dump);
+        min = Math.min(...stat_dump);
     }else{
         console.log("need 2 implement");
     }
@@ -426,21 +463,13 @@ function drawHeatmap(){
 
     gradient_row.style = "background: linear-gradient(to right, "+getRainbowGradient(min, min, max)+", "+getRainbowGradient(max, min, max)+");"+"opacity: " + gradient_opacity;
 
+
+    console.log(max);
     const labels = document.getElementById("label-row").children;
     for(let i = 0; i < labels.length; i++){
         const scaled_value = min + (i/(labels.length-1))*(max-min);
         labels[i].innerHTML = formatData(scaled_value, selected_data, selected_document, 1);
     }
-    // const left_label = document.getElementById("left-label");
-    // const right_label = document.getElementById("right-label");
-    // if(selected_data){
-    //     left_label.innerHTML = formatData(min, selected_data, selected_document);
-    //     right_label.innerHTML = formatData(max, selected_data, selected_document);
-    // }else{
-    //     // No dataset has been selected yet, cannot make a legend
-    //     left_label.innerHTML = "N/A";
-    //     right_label.innerHTML = "N/A";
-    // }
 }
 
 function generateDocumentOptions(){
@@ -487,6 +516,10 @@ function update_collection(e){
         document_names = IQP_doc_names;
         lockSlider();
         slider_note_container.style.display = "block";
+    }else if(selected_collection == heat_collection_name){
+        document_names = heat_doc_names;
+        unlockSlider();
+        slider_note_container.style.display = "none";
     }else{
         console.log(":(");
     }
@@ -640,11 +673,32 @@ async function fetchIQPData() {
     }
 }
 
+async function fetchHeatData() {
+    try{
+        const colRef = collection(db, heat_collection_name);
+
+        // store the firebase response globally
+        // IQP_snapshot = await getDocs(colRef);
+        const snapshot = await getDocs(colRef);
+
+        if (snapshot.empty) {
+            console.log("No documents found.");
+            return;
+        }
+        
+        heatLookup = parseDocs(snapshot);
+        heat_doc_names = Object.keys(snapshot.docs[0].data()); // can be pulled from any document, so the first is used
+    } catch (error) {
+        console.error("Error pulling Firestore data:", error);
+    }   
+}
+
 // Run it!
 Promise.all([
     fetchZoneData(),
     fetchBeneficiaryData(),
-    fetchIQPData()
+    fetchIQPData(),
+    fetchHeatData()
 ]).then(handleDataLoaded);
 
 

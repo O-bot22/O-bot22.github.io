@@ -1,5 +1,4 @@
 // used in map.js to format the data in the legend and the popups
-// TODO: add percentages for previous data
 function formatData(number, dataset_name, selected_document, round=2){
     let pre = "";
     let post = "";
@@ -10,6 +9,11 @@ function formatData(number, dataset_name, selected_document, round=2){
         }else if(selected_document.includes("Open Ended Questions")){
             number = (number*100).toFixed(round);
             post = "%";
+        }else if(selected_document.includes("HVI")){
+            number = (number*100).toFixed(round);
+            post = "%";
+        }else if(selected_document.includes("Heat Vulnerability and Hazard Indices")){
+            number = number.toFixed(4);
         }else if(dataset_name.includes("fuente_de_ingreso")){
             number = number.toFixed(round);
             post = "%";
