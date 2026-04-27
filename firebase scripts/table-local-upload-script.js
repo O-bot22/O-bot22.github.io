@@ -11,12 +11,14 @@ console.log("connected!");
 
 
 const HVI_data = {};
-const data = require("C:/Users/owenr/Downloads/HVI Data(Cleaned).json"); // Your converted Excel data
-const hviMap = new Map(data.map(obj => [obj.Code, obj.HVI]));
-
-// console.log(hviMap);
-// console.log(hviMap.get(1102801001));
-// console.log(hviMap.get(parseInt("1102801001")));
+// const data = require("C:/Users/owenr/Downloads/HVI Data(Cleaned).json"); // Your converted Excel data
+const data = require("C:/Users/owenr/Downloads/HVI +HHI Data(Cleaned).json");
+const hviMap = new Map(data.map(obj => {
+  const datasets = {"HVI": obj.HVI, "HHI": obj.HHI, "HVI + HHI": obj["HVI + HHI"]}
+  return [obj.Code, datasets];
+}));
+// ^ must manually map each dataset you want added to the table
+// ^ the names in quotes are what show up on the website assuming no translation
 
 
 async function addFieldToAll() {
@@ -29,12 +31,12 @@ async function addFieldToAll() {
   }
 
     // adds a map names HVI to each document that has a key value pair of "HVI" and the corresponding HVI value for that CUSEC
-    const updates = snapshot.docs.map(doc => {    
+    const updates = snapshot.docs.map(doc => {
         // the name for a collection of fields in firestore is a map
         // console.log(hviMap.get(parseInt(doc.id)));
-        const HVI = hviMap.get(parseInt(doc.id));
-        if(HVI){
-            doc.ref.update({"datasets.HVI": {"HVI": hviMap.get(parseInt(doc.id))}});
+        const datasets = hviMap.get(parseInt(doc.id));
+        if(datasets){
+            doc.ref.update({"datasets.HVI": datasets});
         }
     });
 
