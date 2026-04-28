@@ -1,6 +1,5 @@
 /**
  * TODO:
- * pages for parts of our project
  * add aggregate heat hazard index data
  * 
  * weighted average

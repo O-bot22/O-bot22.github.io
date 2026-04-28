@@ -34,5 +34,27 @@
     "community-page-header": "Alcance comunitario",
     "about": "Sobre Nosotros",
     "about-description": "Este es un Proyecto de Calificación Interdisciplinario (IQP, por sus siglas en inglés) en WPI centrado en la pobreza energética, la equidad y la visualización de datos.",
-    "about-description2": "Utilice el mapa interactivo para explorar las métricas energéticas geoespaciales y el impacto en la comunidad."
+    "about-description2": "Utilice el mapa interactivo para explorar las métricas energéticas geoespaciales y el impacto en la comunidad.",
+
+    "IQP Report": "Reportaje IQP",
+    "Street Surveys": "Encuestas callerjas",
+    "Community Leader Talks": "Conversaciones de líderes comunitarios",
+    "Highschool Outreach": "Programa de divulgación para estudiantes",
+    "IQP Report-summary": "Informe final del proyecto La pobreza energética (PE), la incapacidad de un hogar para mantener un nivel de servicios energéticos social y materialmente requerido, presenta un problema...",
+    "Street Surveys-summary": "Escuchando a los residentes locales Dentro del proyecto, nuestro equipo realizó encuestas anónimas a pie de calle con residentes de Puerto Real. La encuesta incluyó una variedad de temas económicos, de...",
+    "Community Leader Talks-summary": "Hablando con expertos de la comunidad A lo largo de este proyecto, pudimos coordinar tres entrevistas distintas. Nuestra primera entrevista fue con un...",
+    "Highschool Outreach-summary": "Enseñanza de la eficiencia energética Uno de los componentes clave de nuestro proyecto fueron los talleres con estudiantes de secundaria. Estos talleres consistieron en una presentación...",
+
+    "experts-title": "Hablando con expertos de la comunidad",
+    "experts-body": "Durante este proyecto, pudimos coordinar tres entrevistas. La primera fue con Amanda Rivillas, consultora de Atlántida Medio Ambiente y defensora de la intervención contra la pobreza energética, representante del sector privado. Anteriormente, Rivillas había realizado su propia investigación sobre la pobreza energética en Puerto Real, lo que hizo que su información y orientación fueran fundamentales para nuestro trabajo. La segunda entrevista fue con Silvia Pérez, también representante del sector privado y coordinadora de Transformación Comunitaria de Penta Comunidad. Su trabajo consiste en apoyar la transición energética, mejorar la equidad energética e incluso formar comunidades de energías renovables. Su amplia experiencia en el sector energético nos aportó información valiosa durante todo el proceso. La última entrevista fue con un grupo de miembros del Ayuntamiento de Puerto Real, entre ellos Lorena Díaz, trabajadora de vivienda pública, representante del sector público. El grupo estaba integrado por trabajadores sociales que trabajan directamente para combatir los efectos de la pobreza energética, lo que les brindó una perspectiva muy valiosa. Pudieron revelar la verdadera magnitud del problema, además de las intervenciones existentes. En general, estas entrevistas ayudaron a mejorar la comprensión de nuestros equipos sobre la pobreza energética en Puerto Real, ¡y estamos muy agradecidos por toda la información proporcionada por los participantes!",
+    "experts-link": "Artículos destacados en noticias locales:",
+
+    "surveys-title": "Información proporcionada por los residentes locales.",
+    "surveys-body": "Dentro del proyecto, nuestro equipo realizó encuestas anónimas a pie de calle con residentes de Puerto Real. La encuesta abarcó diversos factores económicos, demográficos y relacionados con la vivienda. Estos datos se utilizarían para mapear y analizar la pobreza energética en la zona. Durante las encuestas, observamos una menor participación de la esperada debido a diversos factores, principalmente la falta de confianza. En total, recopilamos encuestas de 27 residentes de Puerto Real y agregamos los datos de toda la zona para analizar la información disponible.",
+
+    "highschools-title": "Enseñanza de la eficiencia energética",
+    "highschools-body": "Uno de los componentes clave de nuestro proyecto fueron los talleres con estudiantes de secundaria. Estos talleres consistieron en una presentación a cargo de nuestro equipo sobre eficiencia energética. En total, presentamos la información a siete grupos diferentes, con estudiantes de entre 14 y 18 años. La presentación abarcó qué es la energía, cómo se utiliza, cómo ser más eficientes energéticamente y actividades para involucrar a los estudiantes en los temas. Además, los estudiantes completaron encuestas anónimas antes y después de la presentación para evaluar su nivel de aprendizaje.",
+
+    "report-title": "Informe final del proyecto",
+    "report-body": "La pobreza energética (PE), la incapacidad de un hogar para mantener un nivel de servicios energéticos social y materialmente necesario, representa un desafío importante para los residentes de Puerto Real, España. Nuestro equipo colaboró ​​con la profesora Laura Romero y Pilar Monsalvete de la Universidad de Cádiz (UCA) para concienciar sobre la PE y mapearla en Puerto Real. Para este proyecto, se realizaron encuestas y entrevistas, se impartieron talleres y se creó un sitio web para resumir nuestros hallazgos."
 }
