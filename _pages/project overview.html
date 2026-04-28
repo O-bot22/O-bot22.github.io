@@ -10,7 +10,7 @@ author_profile: true
 
 <!-- Site map page to branch off to posts of each activity we did -->
 
-<div>
+<div id="posts-to-translate">
     {% for post in site.documents %}
         {% capture year %}{{ post.date | date: '%Y' }}{% endcapture %}
         {% if year != written_year %}

@@ -45,5 +45,7 @@
     "Efficiency + vulnerable + 65 + individual residence + female": "Eficiencia + vulnerables + 65 + residencia individual + mujeres",
     "Culture + vulnerable + 65 + individual residence + female": "Cultura + vulnerables + 65 + residencia individual + mujeres",
 
-    "HVI": "Índice de Vulnerabilidad del Hogar"
+    "HVI": "Índice de vulnerabilidad del hogar",
+    "HHI": "Índice de riesgo al calor",
+    "HVI + HHI": "Vulnerabilidad y riesgo"
 }

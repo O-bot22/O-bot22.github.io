@@ -261,7 +261,7 @@ pagination:
     after: 2
 
 collections:
-  outreach:
+  overview:
     output: true
 
 # Plugins (previously gems:)
