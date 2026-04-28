@@ -1,9 +1,6 @@
 /**
  * TODO:
- * add data about how students heat their homes? ask Nik
- * add sources on the site so readers can find out citations
  * pages for parts of our project
- * translations for HHI
  * add aggregate heat hazard index data
  * 
  * weighted average
@@ -45,13 +42,11 @@ let averages = {};    // to store aggregated data
 
 // data from Amanda
 const beneficiary_collection_name = "Beneficiary Data";
-let beneficiary_snapshot;
 let beneficiary_doc_names = [];
 let beneficiaryLookup = {};
 
 // Street Survey data will go here
 const IQP_collection_name = "City";
-let IQP_snapshot;
 let IQP_doc_names = [];
 let IQPLookup = {};
 
@@ -61,9 +56,9 @@ let heat_doc_names = [];
 let heatLookup = {};
 
 
-const citation_numbers = {[gov_collection_name]: 1, [beneficiary_collection_name]: 2, [IQP_collection_name]: 3, [heat_collection_name]: 4};
-const citation_link = "https://docs.google.com/document/d/1Aok52nVBBPmk67bubLxlI0CMnhDcOjPCDLCTe4mwIQ8/edit?usp=sharing";
-console.log(citation_numbers);
+const citation_numbers = {[gov_collection_name]: 1, [beneficiary_collection_name]: 2, [IQP_collection_name]: 3, [heat_collection_name]: 3};
+const citation_link = document.getElementById("sources-link").href;
+console.log(citation_link);
 
 // global map variables
 let mapLayer;
@@ -75,10 +70,9 @@ const lang = params.get("lang") || "es";
 // can be set with /map/?lang=es
 
 // pull translation file and store globally
-// const res = await fetch(`/lang/${lang}.json`);
-const translations = await fetch('/lang/' + lang + '.json').then(response => response.json());
+const translations         = await fetch('/lang/'           + lang + '.json').then(response => response.json());
 // documentname translation file
-const dataset_translations = await fetch('/lang/datasets-' + lang + '.json').then(response => response.json());
+const dataset_translations = await fetch('/lang/datasets-'  + lang + '.json').then(response => response.json());
 const document_name_lookup = await fetch('/lang/documents-' + lang + '.json').then(response => response.json());
 
 
@@ -131,7 +125,8 @@ function generate_selected_table(){
     // check that a neighborhood has been selected
     if(! selected_CUSEC && ! aggregated && (selected_collection == gov_collection_name || selected_collection == heat_collection_name)){
         // reset table
-        row_container.innerHTML = '<tr><td id="initial-row" class="translatable" colspan="2" style="width:100%">Please select a neighborhood to get started...</td></tr>';
+        row_container.innerHTML = '<tr><td id="initial-row" class="translatable" colspan="2" style="width:100%">' + translations['initial-row'] + '</td></tr>';
+        // TODO: add spanish translation
         return
     }
 
@@ -596,16 +591,13 @@ function handleDataLoaded(){
 
     legend.onAdd = function (map) {
         var div = L.DomUtil.create('div', 'info legend');
-        div.innerHTML += '<h4>Map Options</h4>';
-        div.innerHTML += "<input type='checkbox' id='rural-toggle' name='rural-toggle' checked><label for='rural-toggle' class='legend'>Show Rural Areas</label><br>";
-        // div.innerHTML += '<i style="background: #477AC2"></i><span>Water</span><br>';
-        // div.innerHTML += '<i style="background: #448D40"></i><span>Forest</span><br>';
+        div.innerHTML += '<h4>' + translations["map-options"] + '</h4>';
+        div.innerHTML += "<input type='checkbox' id='rural-toggle' name='rural-toggle' checked><label for='rural-toggle' class='legend'>" + translations["show-zones"] + "</label><br>";
         return div;
     };
 
     legend.addTo(map);
     document.getElementById("rural-toggle").addEventListener("change", onRuralToggle);
-    console.log(document.getElementById("rural-toggle"));
 
     // calculate average data
     // TODO: use weighted average instead
@@ -644,15 +636,15 @@ async function fetchBeneficiaryData() {
         const colRef = collection(db, beneficiary_collection_name);
 
         // store the firebase response globally
-        beneficiary_snapshot = await getDocs(colRef);
+        const snapshot = await getDocs(colRef);
 
-        if (beneficiary_snapshot.empty) {
+        if (snapshot.empty) {
             console.log("No documents found.");
             return;
         }
         
-        beneficiaryLookup = parseDocs(beneficiary_snapshot);
-        beneficiary_snapshot.docs.forEach(doc => {
+        beneficiaryLookup = parseDocs(snapshot);
+        snapshot.docs.forEach(doc => {
             beneficiary_doc_names.push(doc.id);
         });
     } catch (error) {
@@ -665,15 +657,15 @@ async function fetchIQPData() {
         const colRef = collection(db, IQP_collection_name);
 
         // store the firebase response globally
-        IQP_snapshot = await getDocs(colRef);
+        const snapshot = await getDocs(colRef);
 
-        if (IQP_snapshot.empty) {
+        if (snapshot.empty) {
             console.log("No documents found.");
             return;
         }
         
-        IQPLookup = parseDocs(IQP_snapshot);
-        IQP_snapshot.docs.forEach(doc => {
+        IQPLookup = parseDocs(snapshot);
+        snapshot.docs.forEach(doc => {
             IQP_doc_names.push(doc.id);
         });
     } catch (error) {
@@ -686,7 +678,6 @@ async function fetchHeatData() {
         const colRef = collection(db, heat_collection_name);
 
         // store the firebase response globally
-        // IQP_snapshot = await getDocs(colRef);
         const snapshot = await getDocs(colRef);
 
         if (snapshot.empty) {

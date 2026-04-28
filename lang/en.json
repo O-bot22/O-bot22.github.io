@@ -4,6 +4,8 @@
 
     "Map Title": "Interactive Leaflet Map",
     "Map Attribution":"© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France",
+    "map-options": "Map Options",
+    "show-zones": "Show Rural zones",
 
     "dataset-label": "Choose a dataset:",
     "statistics-header": "Statistics",
