@@ -1,5 +1,5 @@
 // used in map.js to format the data in the legend and the popups
-function formatData(number, dataset_name, selected_document, round=2){
+function formatData(number, dataset_name, selected_document, round=3){
     let pre = "";
     let post = "";
     
@@ -13,7 +13,7 @@ function formatData(number, dataset_name, selected_document, round=2){
             number = (number*100).toFixed(round);
             post = "%";
         }else if(selected_document.includes("Heat Vulnerability and Hazard Indices")){
-            number = number.toFixed(4);
+            number = number.toFixed(round);
         }else if(dataset_name.includes("fuente_de_ingreso")){
             number = number.toFixed(round);
             post = "%";
@@ -37,6 +37,10 @@ function formatData(number, dataset_name, selected_document, round=2){
             // add commas
             number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
+        // if(round!=4 && pre==""){
+        //     // maybe do by length?
+        //     number = Number.parseFloat(number.toFixed(round));
+        // }
         // once all other formatting is done, switch the decimal point to a comma if in spanish and the comma to a decimal point, since that is the standard formatting in spanish, but not if in english, since that is the standard formatting in english
         if(lang == "es"){
             // change to a temp character to mark decimal points

@@ -41,7 +41,7 @@ function highlightRow(id, selected_data, highlight_color = "#c9ffc9"){
     const row_container = document.getElementById("row_container");
     for(const child of row_container.children) {
         for(const grandchild of child.children){
-            grandchild.style.backgroundColor = "white"; // TODO: fix color
+            grandchild.style.backgroundColor = "white";
         }
     }
 
@@ -56,31 +56,44 @@ function highlightRow(id, selected_data, highlight_color = "#c9ffc9"){
     return selected_data;
 }
 
-function calculateAggregateData(docs, gov_doc_names){
-    // const docs = snapshot.docs;
-    // look in each document for each statistic for each document
+/**
+ * Calculates population-weighted averages across a set of documents.
+ * @param {Array} docs - Array of Firestore-style document snapshots.
+ * @param {Array} gov_doc_names - Keys for the specific datasets to aggregate.
+ * @returns {Object} Nested object containing weighted averages per statistic.
+ */
+function calculateAggregateData(docs, gov_doc_names) {
     const averages = {};
-    gov_doc_names.forEach((document_name) => {
-        const stat_names = Object.keys(docs[0].data()["datasets"][document_name]);
-        // console.log(stat_names);
-        averages[document_name] = {};
-        stat_names.forEach(stat_name => {
-            // console.log(stat_name);
-            averages[document_name][stat_name] = 0;
+
+    gov_doc_names.forEach((docName) => {
+        // Use the first document as a template for available statistic keys
+        const statNames = Object.keys(docs[0].data()["datasets"][docName]);
+        averages[docName] = {};
+
+        statNames.forEach(statName => {
+            let totalWeightedValue = 0;
+            let totalPopulation = 0;
+
             docs.forEach(doc => {
-                try{
-                    averages[document_name][stat_name] += doc.data()["datasets"][document_name][stat_name];
-                    // console.log(doc.data()["datasets"][document_name][stat_name]);
-                } catch (error){
-                    // console.log("doc at the end");
-                }
+                const data = doc.data()["datasets"][docName];
+                const population = doc.data()['datasets']['tabla_69142']['total_total'];
+                const statValue = data[statName];
+
+                totalWeightedValue += (statValue * population);
+                totalPopulation += population;
             });
-            const l = docs.length - 2;
-            // console.log(l); // should be number of zones
-            averages[document_name][stat_name] = (averages[document_name][stat_name]/l).toFixed(2);
+
+            // Prevent division by zero and format to 2 decimal places
+            const result = totalPopulation > 0 
+                ? (totalWeightedValue / totalPopulation).toFixed(2) 
+                : "0.00";
+
+            averages[docName][statName] = result;
         });
     });
+
     return averages;
 }
+
 
 export { lockSlider, unlockSlider, highlightRow, parseDocs, calculateAggregateData };

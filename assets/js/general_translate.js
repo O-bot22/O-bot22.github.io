@@ -61,7 +61,11 @@ async function changeLanguage(lang) {
         title_div.children[0].innerText = translations["Map Title"];
     }
 
-    // TODO: change the team bio if its there
+    // change the team bio if its there
+    const bio_div = document.getElementsByClassName("author__bio")[0];
+    if(bio_div && translations["author-bio"]){
+        bio_div.children[0].innerText = translations["author-bio"];
+    }
 
     // change the titles and summaries of all the project description pages
     if(location.pathname=="/project/"){
@@ -73,7 +77,12 @@ async function changeLanguage(lang) {
             elem.children[1].innerText = translations[title + "-summary"];
         })
     }
-    
+
+    // change the page title
+    const title = document.getElementById("page-title");
+    if(title && translations[title.innerText]){
+        title.innerText = translations[title.innerText];
+    }
 
     // dynamically translate elements by id
     let elems = document.getElementsByClassName("translatable");
@@ -97,3 +106,9 @@ let link = document.createElement("link");
 link.rel = "icon";
 link.href = "/assets/images/logo.png";
 document.head.appendChild(link);
+
+// and get rid of the Recent Posts header on the index page
+const recent_posts = document.getElementsByClassName("archive__subtitle")[0];
+if(recent_posts){
+    recent_posts.remove();
+}

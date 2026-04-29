@@ -1,12 +1,11 @@
 /**
  * TODO:
- * add aggregate heat hazard index data
- * 
- * weighted average
- * pie chart with number of people who responded to each question in the survey https://www.w3schools.com/js/js_graphics_chartjs.asp toggle on/off with button in the legend
- * 
- * one button to download selected data, and one to download complete INE data - sheet of all CUSECs as well as aggregated against all variable of a collection
- * meet with sponsors for final once over
+ * color according to risk
+ * fix number of deicmals in legend
+ * made sidebar wider
+ * add more info for P1,2,3 and monthly vs annual income
+ * upload better HHI data
+ * add space between logos
  */
 
 
@@ -26,7 +25,7 @@ let selected_data = null;
 
 let document_names; // this gets populated with the document names from which ever collection is selected
 let old_document = "";
-let selected_CUSEC = null;
+let selected_CUSEC = null; // set to a generic CUSEC just in case
 
 let aggregated = false;
 let showRural = true; // global variable to track whether rural areas should be shown or not, default to true so that they are shown when the page is first loaded
@@ -57,7 +56,6 @@ let heatLookup = {};
 
 const citation_numbers = {[gov_collection_name]: 1, [beneficiary_collection_name]: 2, [IQP_collection_name]: 3, [heat_collection_name]: 3};
 const citation_link = document.getElementById("sources-link").href;
-console.log(citation_link);
 
 // global map variables
 let mapLayer;
@@ -125,14 +123,13 @@ function generate_selected_table(){
     if(! selected_CUSEC && ! aggregated && (selected_collection == gov_collection_name || selected_collection == heat_collection_name)){
         // reset table
         row_container.innerHTML = '<tr><td id="initial-row" class="translatable" colspan="2" style="width:100%">' + translations['initial-row'] + '</td></tr>';
-        // TODO: add spanish translation
         return
     }
 
     // pull new names
     let dataset_names;
     if(selected_collection == gov_collection_name){
-        dataset_names = Object.keys(dataLookup[selected_CUSEC]["datasets"][selected_document]);
+        dataset_names = Object.keys(dataLookup[selected_CUSEC || "1102804002"]["datasets"][selected_document]); // use a default CUSEC in case one is not defined
     }else if(selected_collection == beneficiary_collection_name){
         dataset_names = Object.keys(beneficiaryLookup[selected_document]);
     }else if(selected_collection == IQP_collection_name){
@@ -142,7 +139,6 @@ function generate_selected_table(){
     }else{
         console.log(":(");
     }
-    // TODO: add failsafe for when we do not have data for a specific neighborhood
     
     // generate a row for each name
     dataset_names.forEach(name => {
@@ -165,14 +161,17 @@ function generate_selected_table(){
             identifier.innerHTML = formatted_name;
         }
 
-        console.log(citation_numbers);
         identifier.innerHTML += "<sup><a target='_blank' href='"+citation_link+"'>["+citation_numbers[selected_collection]+"]</a></sup>";
         identifier.id = name+"i";
 
         if(selected_collection == gov_collection_name){
             try{
-                // cusec, "datasets", document name, data name
-                number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_document][name], name, selected_document);
+                if(aggregated){
+                    number.innerHTML = formatData(averages[selected_document][name], name, selected_document);
+                }else{
+                    // order of selection is cusec, "datasets", document name, data name
+                    number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_document][name], name, selected_document);
+                }
             }catch(e){
                 console.log(selected_CUSEC);
                 console.log(e);
@@ -216,8 +215,11 @@ function clearPopups(topLayer){
 function clearHighlights(topLayer){
     mapLayer.eachLayer(function(l) {
         if(l != topLayer){
-            // clear borders
-            l.setStyle({ weight: 0});
+            // clear borders, don't mess with color
+            l.setStyle({
+                weight: 1,
+                color: 'black'
+            });
         }
     });
 }
@@ -252,7 +254,8 @@ function stylePolygon(feature, min, max) {
             statistic = parseFloat(IQPLookup[selected_document][selected_data]);
         }else if(selected_collection == heat_collection_name){
             if(aggregated){
-                // TODO: add aggreates for HVI
+                console.log("Need 2 implement");
+                // future improvement: add aggreates for HVI
                 // statistic = averages[selected_document][selected_data];
             }else{
                 statistic = heatLookup[feature.properties.CUSEC][selected_document][selected_data];
@@ -267,9 +270,9 @@ function stylePolygon(feature, min, max) {
 
     return {
         fillColor: f,
-        weight: 0,
+        weight: 1,
         fillOpacity: 0.7,
-        color: 'white'
+        color: '#000000'
     };
 }
 function onZoneSelected(layer, CUSEC){
@@ -296,7 +299,7 @@ function onZoneSelected(layer, CUSEC){
     selected_CUSEC = CUSEC;
 
     // generate table row for each stat
-    generate_selected_table(); // <- this breaks the first time a zone is selected
+    generate_selected_table();
 
     // keep the same row highlighted when a new CUSEC is picked without redrawing the whole table
     selected_data = highlightRow(null, selected_data);
@@ -333,12 +336,44 @@ function onZoneMouseover(layer, CUSEC) {
             console.log("need 2 implement");
         }
 
-        // breaks for aggregate INE data
-        layer.bindPopup("CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(data_value, selected_data, selected_document), {
+        const innerHTML = "CUSEC: " + CUSEC + "<br>"+display_name+": " + formatData(data_value, selected_data, selected_document); // + '<canvas id="myChart'+CUSEC+'" style="width:100%;max-width:700px"></canvas>';
+        layer.bindPopup(innerHTML, {
             closeButton: false, 
             offset: L.point(0, -10), // Prevents popup from flickering under the cursor
             autoPan: false
         });
+        // const xValues = ["Italy", "France", "Spain", "USA", "Argentina"];
+        // const yValues = [55, 49, 44, 24, 15];
+        // const barColors = [
+        // "#b91d47",
+        // "#00aba9",
+        // "#2b5797",
+        // "#e8c3b9",
+        // "#1e7145"
+        // ];
+
+        // const ctx = document.getElementById('myChart'+CUSEC);
+
+        // new Chart(ctx, {
+        // type: "pie",
+        // data: {
+        //     labels: xValues,
+        //     datasets: [{
+        //     backgroundColor: barColors,
+        //     data: yValues
+        //     }]
+        // },
+        // options: {
+        //     plugins: {
+        //     legend: {display:true},
+        //     title: {
+        //         display: true,
+        //         text: "World Wine Production 2018",
+        //         font: {size:16}
+        //     }
+        //     }
+        // }
+        // });
     }
 
     // unhighlight all other popups except the currently selected one
@@ -349,7 +384,7 @@ function onZoneMouseover(layer, CUSEC) {
         }
         if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
             // clear borders
-            l.setStyle({ weight: 0 });
+            l.setStyle({ weight: 1, color: '#000000' });
         }
     });
 
@@ -466,11 +501,10 @@ function drawHeatmap(){
     gradient_row.style = "background: linear-gradient(to right, "+getRainbowGradient(min, min, max)+", "+getRainbowGradient(max, min, max)+");"+"opacity: " + gradient_opacity;
 
 
-    console.log(max);
     const labels = document.getElementById("label-row").children;
     for(let i = 0; i < labels.length; i++){
         const scaled_value = min + (i/(labels.length-1))*(max-min);
-        labels[i].innerHTML = formatData(scaled_value, selected_data, selected_document, 1);
+        labels[i].innerHTML = formatData(scaled_value, selected_data, selected_document, 2);
     }
 }
 
@@ -500,8 +534,6 @@ function generateDocumentOptions(){
 function update_collection(e){
     selected_collection = e.target.value;
 
-    console.log(selected_collection);
-
     const slider_note_container = document.getElementById("slider-note-container");
 
     if(selected_collection == gov_collection_name){
@@ -519,9 +551,10 @@ function update_collection(e){
         lockSlider();
         slider_note_container.style.display = "block";
     }else if(selected_collection == heat_collection_name){
+        // future improvement could be aggregating the HVI data
         document_names = heat_doc_names;
-        unlockSlider();
-        slider_note_container.style.display = "none";
+        lockSlider();
+        slider_note_container.style.display = "block";
     }else{
         console.log(":(");
     }
@@ -544,11 +577,32 @@ function update_documentname(e){
 }
 
 function onRuralToggle(e){
-    console.log("toggled rural areas: "+e.target.checked);
     // update global varaible and redraw map
     showRural = e.target.checked;
 
     drawHeatmap();
+}
+
+function startDownload(){
+    const data = { "INE Data": dataLookup,
+        "IQP Data": IQPLookup,
+        "Beneficiary Data": beneficiaryLookup,
+        "Heat Data": heatLookup };
+    const jsonString = JSON.stringify(data, null, 2); // Format with 2-space indentation
+
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Full Energy Poverty Data.json";
+
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
 
 function handleDataLoaded(){
@@ -604,6 +658,9 @@ function handleDataLoaded(){
 
     // by default, put slider to aggregated, and then lock it
     lockSlider();
+
+    const download_button = document.getElementById("download-button");
+    download_button.addEventListener('click', startDownload);
 }
 
 async function fetchZoneData() {
@@ -691,6 +748,65 @@ async function fetchHeatData() {
     }   
 }
 
+async function fetchData(db, collection_name){
+    try{
+        const colRef = collection(db, collection_name);
+
+        // store the firebase response globally
+        const snapshot = await getDocs(colRef);
+
+        if (snapshot.empty) {
+            console.log("No documents found.");
+            return;
+        }
+        
+        // parse the documents from the database
+        const dataLookup = {};
+        snapshot.forEach(doc => {
+            dataLookup[doc.id] = doc.data();
+        });
+        
+        // parse the document names
+        let docNames = [];
+        if(collection_name == gov_collection_name){
+            docNames = Object.keys(snapshot.docs[0].data()["datasets"]);
+        }else if(collection_name == beneficiary_collection_name){
+            snapshot.docs.forEach(doc => {
+                docNames.push(doc.id);
+            });
+        }else if(collection_name == IQP_collection_name){
+            snapshot.docs.forEach(doc => {
+                docNames.push(doc.id);
+            });
+        }else if(collection_name == heat_collection_name){
+            docNames = Object.keys(snapshot.docs[0].data());
+        }else{
+            console.log("Need 2 implement");
+        }
+
+        return [dataLookup, docNames];
+    } catch (error) {
+        console.error("Error pulling Firestore data:", error);
+    }
+}
+
+async function loadAllData(){
+    return Promise.all([
+        fetchData(db, gov_collection_name).then((dataLookup, docNames) => {
+            console.log(dataLookup);
+        }),
+        fetchData(db, beneficiary_collection_name).then((dataLookup, docNames) => {
+            console.log(dataLookup);
+        }),
+        fetchData(db, IQP_collection_name).then((dataLookup, docNames) => {
+            console.log(dataLookup);
+        }),
+        fetchData(db, heat_collection_name).then((dataLookup, docNames) => {
+            console.log(dataLookup);
+        })
+    ])
+}
+
 // Run it!
 Promise.all([
     fetchZoneData(),
@@ -699,6 +815,7 @@ Promise.all([
     fetchHeatData()
 ]).then(handleDataLoaded);
 
+loadAllData();
 
 const toggle_switch = document.getElementById("toggle");
 toggle_switch.addEventListener("change", (e) => {

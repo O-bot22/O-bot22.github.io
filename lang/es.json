@@ -2,6 +2,7 @@
     "Map Display": "Visualización del mapa",
     "Energy Usage Tips": "Folleto de energía",
     "Project Overview": "Descripción del proyecto",
+    "Sources": "Fuentes",
 
 
     "heat-indices-collection": "Índices de calor",
@@ -10,6 +11,7 @@
     "Map Attribution":"© Colaboradores de OpenStreetMap, estilo de mosaicos por el equipo humanitario de OpenStreetMap, alojado por OpenStreetMap Francia.",
     "map-options": "Opciones de mapa",
     "show-zones": "Mostrar zonas rurales",
+    "download-button": "Descargar todos los datos",
     
     "collection-label": "Elige un recopilación:",
     "iqp-collection": "Datos de encuestas callejeras",
@@ -35,9 +37,10 @@
     "about": "Sobre Nosotros",
     "about-description": "Este es un Proyecto de Calificación Interdisciplinario (IQP, por sus siglas en inglés) en WPI centrado en la pobreza energética, la equidad y la visualización de datos.",
     "about-description2": "Utilice el mapa interactivo para explorar las métricas energéticas geoespaciales y el impacto en la comunidad.",
+    "project-overview-description": "Mira lo que hicimos durante nuestra estancia en España...",
 
     "IQP Report": "Reportaje IQP",
-    "Street Surveys": "Encuestas callerjas",
+    "Street Surveys": "Encuestas callejeras",
     "Community Leader Talks": "Conversaciones de líderes comunitarios",
     "Highschool Outreach": "Programa de divulgación para estudiantes",
     "IQP Report-summary": "Informe final del proyecto La pobreza energética (PE), la incapacidad de un hogar para mantener un nivel de servicios energéticos social y materialmente requerido, presenta un problema...",
@@ -56,5 +59,9 @@
     "highschools-body": "Uno de los componentes clave de nuestro proyecto fueron los talleres con estudiantes de secundaria. Estos talleres consistieron en una presentación a cargo de nuestro equipo sobre eficiencia energética. En total, presentamos la información a siete grupos diferentes, con estudiantes de entre 14 y 18 años. La presentación abarcó qué es la energía, cómo se utiliza, cómo ser más eficientes energéticamente y actividades para involucrar a los estudiantes en los temas. Además, los estudiantes completaron encuestas anónimas antes y después de la presentación para evaluar su nivel de aprendizaje.",
 
     "report-title": "Informe final del proyecto",
-    "report-body": "La pobreza energética (PE), la incapacidad de un hogar para mantener un nivel de servicios energéticos social y materialmente necesario, representa un desafío importante para los residentes de Puerto Real, España. Nuestro equipo colaboró ​​con la profesora Laura Romero y Pilar Monsalvete de la Universidad de Cádiz (UCA) para concienciar sobre la PE y mapearla en Puerto Real. Para este proyecto, se realizaron encuestas y entrevistas, se impartieron talleres y se creó un sitio web para resumir nuestros hallazgos."
+    "report-body": "La pobreza energética (PE), la incapacidad de un hogar para mantener un nivel de servicios energéticos social y materialmente necesario, representa un desafío importante para los residentes de Puerto Real, España. Nuestro equipo colaboró ​​con la profesora Laura Romero y Pilar Monsalvete de la Universidad de Cádiz (UCA) para concienciar sobre la PE y mapearla en Puerto Real. Para este proyecto, se realizaron encuestas y entrevistas, se impartieron talleres y se creó un sitio web para resumir nuestros hallazgos.",
+
+    "Works Cited": "Obras Citadas",
+    
+    "author-bio": "Equipo interdisciplinario de estudiantes del programa IQP del WPI que investiga la pobreza energética (patrocinado por la UCA)."
 }
