@@ -44,8 +44,15 @@ table{
 }
 
 #main {
-  margin-inline: 3em;
-  max-width: 1560px;
+  margin-inline: 1em;
+  max-width: 100%;
+}
+
+
+@media (min-width: 80em) {
+  .archive, .page {
+    width: calc(100% - 400px);
+  }
 }
 
 .page__footer div{
@@ -93,6 +100,7 @@ td.first-box{
 // always keep it opaque
 .sidebar {
   opacity: 1;
+  min-width: 23em;
 }
 
 // style the slider button
