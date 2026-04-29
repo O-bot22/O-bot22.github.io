@@ -1,7 +1,11 @@
 // helper functions for map.js
-function lockSlider(){
+/**
+ * changes properties of the specific HTML elements
+ * @param {Boolean} on - whether to lock the slider in the on or off position
+ */
+function lockSlider(on = true){
     const toggle_switch = document.getElementById("toggle");
-    toggle_switch.checked = true;
+    toggle_switch.checked = on;
     toggle_switch.disabled = true;
     const slider_span = document.getElementById("slider-span");
     slider_span.style.cursor = "not-allowed";

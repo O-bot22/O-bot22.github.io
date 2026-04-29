@@ -4,7 +4,6 @@
  * fix number of deicmals in legend
  * made sidebar wider
  * add more info for P1,2,3 and monthly vs annual income
- * upload better HHI data
  * add space between logos
  */
 
@@ -553,7 +552,7 @@ function update_collection(e){
     }else if(selected_collection == heat_collection_name){
         // future improvement could be aggregating the HVI data
         document_names = heat_doc_names;
-        lockSlider();
+        lockSlider(false);
         slider_note_container.style.display = "block";
     }else{
         console.log(":(");
