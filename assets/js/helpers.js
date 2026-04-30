@@ -66,26 +66,35 @@ function highlightRow(id, selected_data, highlight_color = "#c9ffc9"){
  * @param {Array} gov_doc_names - Keys for the specific datasets to aggregate.
  * @returns {Object} Nested object containing weighted averages per statistic.
  */
-function calculateAggregateData(docs, gov_doc_names) {
+function calculateAggregateData(dataLookup, gov_doc_names) {
     const averages = {};
 
     gov_doc_names.forEach((docName) => {
-        // Use the first document as a template for available statistic keys
-        const statNames = Object.keys(docs[0].data()["datasets"][docName]);
+        // Use a generic document as a template for available statistic keys
+        // console.log(dataLookup);
+        // console.log(docName);
+        const statNames = Object.keys(dataLookup["1102804002"]["datasets"][docName]);
+        // console.log(statNames);
         averages[docName] = {};
 
         statNames.forEach(statName => {
             let totalWeightedValue = 0;
             let totalPopulation = 0;
 
-            docs.forEach(doc => {
-                const data = doc.data()["datasets"][docName];
-                const population = doc.data()['datasets']['tabla_69142']['total_total'];
-                const statValue = data[statName];
+            for(const [docID, doc] of Object.entries(dataLookup)){
+                try{
+                    const data = doc["datasets"][docName];
+                    const population = doc['datasets']['tabla_69142']['total_total'];
+                    const statValue = data[statName];
 
-                totalWeightedValue += (statValue * population);
-                totalPopulation += population;
-            });
+                    totalWeightedValue += (statValue * population);
+                    totalPopulation += population;
+                } catch {
+                    // ignore extraneous rows
+                    // console.log(doc);
+                    // console.log(docName);
+                }
+            };
 
             // Prevent division by zero and format to 2 decimal places
             const result = totalPopulation > 0 

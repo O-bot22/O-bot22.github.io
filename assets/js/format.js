@@ -4,21 +4,33 @@ function formatData(number, dataset_name, selected_document, round=3){
     let post = "";
     
     try{
+        // console.log(number);
+        // console.log(dataset_name+" _____ "+selected_document);
         if(selected_document.includes("IQP Data")){
             /* pass, data is already formatted */
         }else if(selected_document.includes("Open Ended Questions")){
-            number = (number*100).toFixed(round);
+            number = (number*100).toFixed(0);
             post = "%";
         }else if(selected_document.includes("HVI")){
             number = (number*100).toFixed(round);
             post = "%";
         }else if(selected_document.includes("Heat Vulnerability and Hazard Indices")){
             number = number.toFixed(round);
+        }else if(selected_document.includes("tabla_30949")){
+            number = parseFloat(number).toFixed(1);
+            post = "%";
         }else if(dataset_name.includes("fuente_de_ingreso")){
-            number = number.toFixed(round);
+            // console.log('g');
+            // console.log(number);
+            // console.log(parseFloat(number).toFixed(1));
+            number = parseFloat(number).toFixed(1);
             post = "%";
-        }else if(dataset_name.includes("Porcentaje")){
+        }else if(dataset_name.includes("Porcentaje") || dataset_name.includes("<") || dataset_name.includes(">")){
+            // the >65 and <18 and <4 from the beneficiary data are percentages
             post = "%";
+        }else if(selected_document.includes("tabla_30946")){
+            number = (number*1).toFixed(1);
+            post = "%"; 
         }else if(dataset_name.includes("poblacion") && dataset_name != "poblacion_16_y_mas_total"){ // needs to exclude the total population over 16, which is just a number that needs commas, not a percentage
             // needs to exclude the populations under ecenomic activity, which are just number of people
             if(selected_document != "tabla_66687"){
@@ -29,7 +41,7 @@ function formatData(number, dataset_name, selected_document, round=3){
             post = "%";
         }else if(dataset_name.includes("tasa")){
             console.log("found tasa: "+dataset_name);
-        }else if(selected_document == "tabla_30944"){
+        }else if(selected_document == "tabla_30944" || dataset_name.includes("Ingresos medios") || dataset_name.includes("Coste medio mensual luz")){
             pre = "€";
             // add commas
             number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -37,7 +49,8 @@ function formatData(number, dataset_name, selected_document, round=3){
             // add commas
             number = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
-        // if(round!=4 && pre==""){
+
+        // if(number.){
         //     // maybe do by length?
         //     number = Number.parseFloat(number.toFixed(round));
         // }

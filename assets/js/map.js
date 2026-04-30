@@ -2,9 +2,7 @@
  * TODO:
  * color according to risk
  * fix number of deicmals in legend
- * made sidebar wider
  * add more info for P1,2,3 and monthly vs annual income
- * add space between logos
  */
 
 
@@ -24,7 +22,7 @@ let selected_data = null;
 
 let document_names; // this gets populated with the document names from which ever collection is selected
 let old_document = "";
-let selected_CUSEC = null; // set to a generic CUSEC just in case
+let selected_CUSEC = null;
 
 let aggregated = false;
 let showRural = true; // global variable to track whether rural areas should be shown or not, default to true so that they are shown when the page is first loaded
@@ -653,7 +651,7 @@ function handleDataLoaded(){
 
     // calculate average data
     // TODO: use weighted average instead
-    averages = calculateAggregateData(snapshot.docs, gov_doc_names);
+    averages = calculateAggregateData(dataLookup, gov_doc_names);
 
     // by default, put slider to aggregated, and then lock it
     lockSlider();
