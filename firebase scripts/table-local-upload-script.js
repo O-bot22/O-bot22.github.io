@@ -1,5 +1,6 @@
 // used to add a new table to every CUSEC document in the Zones collection
 
+// OLDDDDDDD
 
 const admin = require('firebase-admin');
 // Tell the script to talk to the EMULATOR, not production
@@ -12,7 +13,8 @@ console.log("connected!");
 
 const HVI_data = {};
 // const data = require("C:/Users/owenr/Downloads/HVI Data(Cleaned).json"); // Your converted Excel data
-const data = require("C:/Users/owenr/Downloads/HVI +HHI Data(Cleaned).json");
+// const data = require("C:/Users/owenr/Downloads/HVI +HHI Data(Cleaned).json");
+const data = require("C:/Users/owenr/Downloads/HVI +HHI Data(Cleaned) (1).json");
 const hviMap = new Map(data.map(obj => {
   const datasets = {"HVI": obj.HVI, "HHI": obj.HHI, "HVI + HHI": obj["HVI + HHI"]}
   return [obj.Code, datasets];
