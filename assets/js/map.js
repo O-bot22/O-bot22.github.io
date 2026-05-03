@@ -1,8 +1,5 @@
 /**
- * TODO:
- * color according to risk
- * fix number of deicmals in legend
- * add more info for P1,2,3 and monthly vs annual income
+ * TODO: DONE!!!
  */
 
 
@@ -27,12 +24,13 @@ let selected_CUSEC = null;
 let aggregated = false;
 let showRural = true; // global variable to track whether rural areas should be shown or not, default to true so that they are shown when the page is first loaded
 const ruralDistricts = ["1102804002", "1102804001", "1102804004", "1102804003", "1102804006"];
+const reverseDatasets = ["fuente_de_ingreso_prestaciones_por_desempleo", "fuente_de_ingreso_otras_prestaciones", "fuente_de_ingreso_otros_ingresos"];
 
 // original government data
 const gov_collection_name = "Zones"; // MUST MATCH THE NAME IN FIREBASE EXACTLY, AND THE NAME IN THE DATASET DROPDOWN (as defined in sidebar-custom.js)
 let gov_doc_names;
 let snapshot;
-let dataLookup = {};  // to store firebase data
+let govDataLookup = {};  // to store firebase data
 let averages = {};    // to store aggregated data
 
 // data from Amanda
@@ -104,7 +102,7 @@ function newDatasetSelectedCallback(e){
 
     selected_data = highlightRow(e.target.id, selected_data);
 
-    console.log("clicked on dataset: "+e.target.id);
+    // console.log("clicked on dataset: "+e.target.id);
 
     // redraw the map
     drawHeatmap();
@@ -126,7 +124,7 @@ function generate_selected_table(){
     // pull new names
     let dataset_names;
     if(selected_collection == gov_collection_name){
-        dataset_names = Object.keys(dataLookup[selected_CUSEC || "1102804002"]["datasets"][selected_document]); // use a default CUSEC in case one is not defined
+        dataset_names = Object.keys(govDataLookup[selected_CUSEC || "1102804002"]["datasets"][selected_document]); // use a default CUSEC in case one is not defined
     }else if(selected_collection == beneficiary_collection_name){
         dataset_names = Object.keys(beneficiaryLookup[selected_document]);
     }else if(selected_collection == IQP_collection_name){
@@ -167,7 +165,7 @@ function generate_selected_table(){
                     number.innerHTML = formatData(averages[selected_document][name], name, selected_document);
                 }else{
                     // order of selection is cusec, "datasets", document name, data name
-                    number.innerHTML = formatData(dataLookup[selected_CUSEC]["datasets"][selected_document][name], name, selected_document);
+                    number.innerHTML = formatData(govDataLookup[selected_CUSEC]["datasets"][selected_document][name], name, selected_document);
                 }
             }catch(e){
                 console.log(selected_CUSEC);
@@ -243,7 +241,7 @@ function stylePolygon(feature, min, max) {
             if(aggregated){
                 statistic = averages[selected_document][selected_data];
             }else{
-                statistic = dataLookup[feature.properties.CUSEC]["datasets"][selected_document][selected_data];
+                statistic = govDataLookup[feature.properties.CUSEC]["datasets"][selected_document][selected_data];
             }
         }else if(selected_collection == beneficiary_collection_name){
             statistic = beneficiaryLookup[selected_document][selected_data];
@@ -263,7 +261,12 @@ function stylePolygon(feature, min, max) {
     }
 
     // fill with a standard color when showing aggregate data
-    const f = getRainbowGradient(statistic, min, max);
+    let f;
+    if(reverseDatasets.includes(selected_data)){
+        f = getRainbowGradient(statistic, min, max, true);
+    }else{
+        f = getRainbowGradient(statistic, min, max);
+    }
 
     return {
         fillColor: f,
@@ -322,7 +325,7 @@ function onZoneMouseover(layer, CUSEC) {
         let data_value;
 
         if(selected_collection == gov_collection_name){
-            data_value = dataLookup[CUSEC]["datasets"][selected_document][selected_data];
+            data_value = govDataLookup[CUSEC]["datasets"][selected_document][selected_data];
         }else if(selected_collection == beneficiary_collection_name){
             data_value = beneficiaryLookup[selected_document][selected_data];
         }else if(selected_collection == IQP_collection_name){
@@ -376,7 +379,7 @@ function onZoneMouseover(layer, CUSEC) {
     // unhighlight all other popups except the currently selected one
     mapLayer.eachLayer(function(l) {
         if(l.feature.properties.CUSEC == selected_CUSEC){
-            console.log(selected_CUSEC + "is the selected CUSEC");
+            // console.log(selected_CUSEC + "is the selected CUSEC");
             l.setStyle({ weight: 5, color: selected_color, dashArray: '', fillOpacity: gradient_opacity });
         }
         if(l != layer && l.feature.properties.CUSEC != selected_CUSEC){
@@ -413,10 +416,10 @@ function filterRural(feature){
     if(showRural){
        return feature
     }else{
-        console.log("filtering rural areas...");
-        console.log(feature.properties.CUSEC);
+        // console.log("filtering rural areas...");
+        // console.log(feature.properties.CUSEC);
         if(ruralDistricts.includes(feature.properties.CUSEC)){
-            console.log("filtering out rural area: "+feature.properties.CUSEC);
+            // console.log("filtering out rural area: "+feature.properties.CUSEC);
             return null
         }else{
             return feature
@@ -435,7 +438,7 @@ function drawHeatmap(){
         // pull the statistic for each neighborhood to get max and min numbers
         // store each value in an array for processing at the end
         const stat_dump = [];
-        Object.entries(dataLookup).forEach(data => {
+        Object.entries(govDataLookup).forEach(data => {
             // filter out metadata
             if(data[0] == "_query" || data[0] == "_readTime"){
                 return
@@ -494,14 +497,22 @@ function drawHeatmap(){
 
     // update the legend
     const gradient_row = document.getElementById("gradient");
-
-    gradient_row.style = "background: linear-gradient(to right, "+getRainbowGradient(min, min, max)+", "+getRainbowGradient(max, min, max)+");"+"opacity: " + gradient_opacity;
-
+    const direction = 'right' ; // reverseDatasets.includes(selected_data) ? 'left' : 'right';
+    gradient_row.style = "background: linear-gradient(to "+direction+", "+getRainbowGradient(min, min, max)+", "+getRainbowGradient(max, min, max)+");"+"opacity: " + gradient_opacity;
 
     const labels = document.getElementById("label-row").children;
     for(let i = 0; i < labels.length; i++){
         const scaled_value = min + (i/(labels.length-1))*(max-min);
-        labels[i].innerHTML = formatData(scaled_value, selected_data, selected_document, 2);
+        const index = reverseDatasets.includes(selected_data) ? (labels.length-1 - i) : i;
+        labels[index].innerHTML = formatData(scaled_value, selected_data, selected_document, 2);
+    }
+
+    if(reverseDatasets.includes(selected_data)){
+        document.getElementById("minimum-label").innerText = translations['maximum-label'];
+        document.getElementById("maximum-label").innerText = translations['minimum-label'];
+    }else{
+        document.getElementById("minimum-label").innerText = translations['minimum-label'];
+        document.getElementById("maximum-label").innerText = translations['maximum-label'];
     }
 }
 
@@ -581,7 +592,7 @@ function onRuralToggle(e){
 }
 
 function startDownload(){
-    const data = { "INE Data": dataLookup,
+    const data = { "INE Data": govDataLookup,
         "IQP Data": IQPLookup,
         "Beneficiary Data": beneficiaryLookup,
         "Heat Data": heatLookup };
@@ -651,98 +662,13 @@ function handleDataLoaded(){
 
     // calculate average data
     // TODO: use weighted average instead
-    averages = calculateAggregateData(dataLookup, gov_doc_names);
+    averages = calculateAggregateData(govDataLookup, gov_doc_names);
 
     // by default, put slider to aggregated, and then lock it
     lockSlider();
 
     const download_button = document.getElementById("download-button");
     download_button.addEventListener('click', startDownload);
-}
-
-async function fetchZoneData() {
-  try {
-    // console.log("connecting to database...");
-    const colRef = collection(db, gov_collection_name);
-    // console.log("database connected !");
-
-    // store the firebase response globally
-    snapshot = await getDocs(colRef);
-
-    // console.log("data recieved!");
-    
-    if (snapshot.empty) {
-      console.log("No documents found.");
-      return;
-    }
-
-    // Create the lookup object
-    dataLookup = parseDocs(snapshot);
-    gov_doc_names = Object.keys(snapshot.docs[0].data()["datasets"]); // can be pulled from any dataset, so the first is used
-  } catch (error) {
-    console.error("Error pulling Firestore data:", error);
-  }
-}
-
-async function fetchBeneficiaryData() {
-    try{
-        const colRef = collection(db, beneficiary_collection_name);
-
-        // store the firebase response globally
-        const snapshot = await getDocs(colRef);
-
-        if (snapshot.empty) {
-            console.log("No documents found.");
-            return;
-        }
-        
-        beneficiaryLookup = parseDocs(snapshot);
-        snapshot.docs.forEach(doc => {
-            beneficiary_doc_names.push(doc.id);
-        });
-    } catch (error) {
-        console.error("Error pulling Firestore data:", error);
-    }
-}
-
-async function fetchIQPData() {
-    try{
-        const colRef = collection(db, IQP_collection_name);
-
-        // store the firebase response globally
-        const snapshot = await getDocs(colRef);
-
-        if (snapshot.empty) {
-            console.log("No documents found.");
-            return;
-        }
-        
-        IQPLookup = parseDocs(snapshot);
-        snapshot.docs.forEach(doc => {
-            IQP_doc_names.push(doc.id);
-        });
-    } catch (error) {
-        console.error("Error pulling Firestore data:", error);
-    }
-}
-
-async function fetchHeatData() {
-    try{
-        const colRef = collection(db, heat_collection_name);
-
-        // store the firebase response globally
-        const snapshot = await getDocs(colRef);
-
-        if (snapshot.empty) {
-            console.log("No documents found.");
-            return;
-        }
-        
-        heatLookup = parseDocs(snapshot);
-        heat_doc_names = Object.keys(snapshot.docs[0].data()); // can be pulled from any document, so the first is used
-    } catch (error) {
-        console.error("Error pulling Firestore data:", error);
-    }   
 }
 
 async function fetchData(db, collection_name){
@@ -789,30 +715,31 @@ async function fetchData(db, collection_name){
 
 async function loadAllData(){
     return Promise.all([
-        fetchData(db, gov_collection_name).then((dataLookup, docNames) => {
-            console.log(dataLookup);
+        fetchData(db, gov_collection_name).then(([dataLookup, docNames]) => {
+            govDataLookup = dataLookup;
+            gov_doc_names = docNames;
+            console.log("Gov data loaded");
         }),
-        fetchData(db, beneficiary_collection_name).then((dataLookup, docNames) => {
-            console.log(dataLookup);
+        fetchData(db, beneficiary_collection_name).then(([dataLookup, docNames]) => {
+            beneficiaryLookup = dataLookup;
+            beneficiary_doc_names = docNames;
+            console.log("Beneficiary data loaded");
         }),
-        fetchData(db, IQP_collection_name).then((dataLookup, docNames) => {
-            console.log(dataLookup);
+        fetchData(db, IQP_collection_name).then(([dataLookup, docNames]) => {
+            IQPLookup = dataLookup;
+            IQP_doc_names = docNames;
+            console.log("IQP data loaded");
         }),
-        fetchData(db, heat_collection_name).then((dataLookup, docNames) => {
-            console.log(dataLookup);
+        fetchData(db, heat_collection_name).then(([dataLookup, docNames]) => {
+            heatLookup = dataLookup;
+            heat_doc_names = docNames;
+            console.log("Heat data loaded");
         })
     ])
 }
 
 // Run it!
-Promise.all([
-    fetchZoneData(),
-    fetchBeneficiaryData(),
-    fetchIQPData(),
-    fetchHeatData()
-]).then(handleDataLoaded);
-
-loadAllData();
+loadAllData().then(() => handleDataLoaded());
 
 const toggle_switch = document.getElementById("toggle");
 toggle_switch.addEventListener("change", (e) => {

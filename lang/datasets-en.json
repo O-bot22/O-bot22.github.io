@@ -136,7 +136,7 @@
     "Ingresos medios (por persona)": "Average Income per Person",
     "Coste medio mensual luz": "Average Monthly Electricity Cost",
     "Potencia contratada (Kw)": "Contracted Power (Kw)",
-    "Consumo P1": "P1 Consumption",
-    "Consumo P2": "P2 Consumption",
-    "Consumo P3": "P3 Consumption"
+    "Consumo P1": "P1 (peak) Consumption",
+    "Consumo P2": "P2 (standard) Consumption",
+    "Consumo P3": "P3 (offpeak) Consumption"
 }
