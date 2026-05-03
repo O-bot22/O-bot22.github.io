@@ -80,7 +80,7 @@ function getMultiColorGradient(value, min, max, color1, color2, color3) {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-function getRainbowGradient(value, min, max) {
+function getRainbowGradient(value, min, max, reversed=false) {
     const clamped = Math.max(min, Math.min(max, value));
     const range = max - min;
     let d = range === 0 ? 0 : (clamped - min) / range;
@@ -88,7 +88,12 @@ function getRainbowGradient(value, min, max) {
         d = .5; // default to middle color if no range
     }
     // find a color d% between a1 and a2
-    const rgd_array = rgb1.map((p, i) => Math.floor(rgb1[i] + d * (rgb2[i] - rgb1[i])))
+    let rgd_array;
+    if(reversed){
+        rgd_array = rgb2.map((p, i) => Math.floor(rgb2[i] + d * (rgb1[i] - rgb2[i])));
+    }else{
+        rgd_array = rgb1.map((p, i) => Math.floor(rgb1[i] + d * (rgb2[i] - rgb1[i])));
+    }
     return `rgba(${rgd_array.join(",")}, 1)`
 }
 

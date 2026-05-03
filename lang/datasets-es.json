@@ -47,5 +47,13 @@
 
     "HVI": "Índice de vulnerabilidad del hogar",
     "HHI": "Índice de riesgo al calor",
-    "HVI + HHI": "Vulnerabilidad y riesgo"
+    "HVI + HHI": "Vulnerabilidad y riesgo",
+
+    
+    ">65": "Porcentaje de hogares con adultos mayores de 65 años",
+    "<18": "Porcentaje de hogares con niños menores de 18 años",
+    "<4": "Porcentaje de hogares con niños menores de 4 años",
+    "Consumo P1": "Consumo de P1 (pico)",
+    "Consumo P2": "Consumo P2 (estándar)",
+    "Consumo P3": "Consumo P3 (fuera de las horas punta)"
 }

@@ -27,7 +27,11 @@ function formatData(number, dataset_name, selected_document, round=3){
             post = "%";
         }else if(dataset_name.includes("Porcentaje") || dataset_name.includes("<") || dataset_name.includes(">")){
             // the >65 and <18 and <4 from the beneficiary data are percentages
+            number = parseFloat(number.toFixed(round));
             post = "%";
+            console.log('j');
+        }else if(dataset_name.includes("Tamaño medio del hogar") || dataset_name.includes("Índice de Gini")){
+            number = parseFloat(number.toFixed(round));
         }else if(selected_document.includes("tabla_30946")){
             number = (number*1).toFixed(1);
             post = "%"; 
